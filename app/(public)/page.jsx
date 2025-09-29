@@ -1,15 +1,15 @@
 import { Badge } from 'lucide-react';
 import LiquidEther from '../component/background/LiquidEther';
-import { Sparkles, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 export default function page() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-100 via-slate-100 to-orange-200 overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden">
       {/* Hero Section */}
 
       <section className="relative pt-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className=" absolute inset-0">
           <LiquidEther
-            colors={['#5227FF', '#FF9FFC', '#B19EEF']}
+            colors={['#F8FAFC', '#FFEDD5', '#FFE0B2']}
             mouseForce={20}
             cursorSize={100}
             isViscous={false}
@@ -54,23 +54,22 @@ export default function page() {
             <form className="max-w-lg mx-auto mb-10 ">
               <div className="flex flex-col sm:flex-row gap-4 p-2 bg-white rounded-2xl shadow-2xl border border-gray-100">
                 <input
-                  type="email"
-                  placeholder="Enter your email"
+                  type="text"
+                  placeholder="What are you looking for?"
                   className="flex-1 h-14 px-6 border-0 rounded-xl text-lg text-gray-700md:text-xl py-3 placeholder:text-gray-400 focus:ring-0 focus:outline-none"
                   required
                 />
-                <button className="h-14 px-8 text-white bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
+                <button className="h-13 px-8 text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-amber-500/20 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105">
                   Search
                 </button>
               </div>
-              <p className="text-sm text-gray-500 mt-4 flex items-center justify-center">
-                <CheckCircle className="w-4 h-4 mr-2 text-green-500" />
-                Always free • No hidden fees • Full access to all features
-              </p>
+            
             </form>
           </div>
         </div>
       </section>
+
+
     </div>
   );
 }
