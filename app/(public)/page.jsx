@@ -4,8 +4,15 @@ import { CheckCircle } from 'lucide-react';
 export default function page() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden">
+      <div className='absolute top-6 right-8 z-20'>
+        <a href='./login' 
+          className="px-4 py-2 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-lg transition-all duration-200">
+          Login
+        </a>
+      </div>
+      
+      
       {/* Hero Section */}
-
       <section className="relative pt-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className=" absolute inset-0">
           <LiquidEther
