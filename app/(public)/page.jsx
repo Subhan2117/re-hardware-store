@@ -23,11 +23,15 @@ import Navbar from '../component/Navbar';
 export default function page() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden">
+
+      
+      
+
       {/** NavaBar */}
       <Navbar />
      
-      {/* Hero Section */}
 
+      {/* Hero Section */}
       <section className="relative pt-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className=" absolute inset-0">
           <LiquidEther
