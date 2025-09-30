@@ -1,7 +1,7 @@
 'use client';
 
 import LiquidEther from '../../component/background/LiquidEther';
-import { CheckCircle, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { Hammer } from 'lucide-react';
 import { Eye } from 'lucide-react';
@@ -11,7 +11,6 @@ import { useState } from 'react';
 
 export default function page() {
   const [showPassword, setShowPassword] = useState(false);
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden relative  px-4">
@@ -114,6 +113,7 @@ export default function page() {
                   required
                 />
                 <button
+                type='button'
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-2 top-1/2 -translate-y-1/2"
                 >
