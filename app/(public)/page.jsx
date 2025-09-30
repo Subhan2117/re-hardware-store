@@ -79,14 +79,14 @@ export default function page() {
 
             <form className="max-w-6xl mx-auto mb-8 ">
               <div>
-                <div className="flex sm:flex-row gap-4 p-2 bg-transparent rounded-2xl shadow-2xl  border-0">
+                <div className="flex flex-col sm:items-center sm:flex-row gap-4 p-2 bg-transparent rounded-2xl shadow-2xl  border-0">
                   <input
                     type="text"
                     placeholder="Search tools, hardware, supplies..."
                     className="flex-1 h-14 px-6 bg-white/30 backdrop-blur-lg border border-orange-500 rounded-xl text-lg text-gray-700 md:text-xl py-3 placeholder:text-gray-700 focus:ring-orange-500 focus:outline-none focus:ring-2"
                     required
                   />
-                  <button className="h-13 px-8 text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-amber-500/20 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 cursor-pointer">
+                  <button className="h-12 px-8 text-white bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 shadow-amber-500/20 rounded-xl font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 cursor-pointer">
                     Search
                   </button>
                 </div>
