@@ -31,7 +31,7 @@ export default function page() {
                 <Hammer className="w-5 h-5 text-white" />
               </div>
               <span className="text-xl font-bold text-slate-800">
-                BuildCraft Hardware
+                Re's Hardware
               </span>
             </div>
 
@@ -63,10 +63,11 @@ export default function page() {
             </div>
 
             <div className="flex items-center space-x-3">
-              <button className="text-slate-600 hover:text-amber-600 transition-all duration-300 cursor-pointer">
-                <ShoppingCart className="w-5 h-5 mr-3" />
-              </button>
-              <button className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-500/20 transition-all duration-300 px-6 py-2 rounded-2xl cursor-pointer">
+         
+               <button className=" text-amber-700 bg-amber-50/80 hover:from-amber-700 hover:to-orange-700  shadow-lg shadow-amber-500/20 transition-all duration-300 md:px-6 md:py-2  px-3 py-1 rounded-2xl cursor-pointer">
+                  <Link href={'/login'}>Login</Link>
+                </button>
+              <button className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-500/20 transition-all duration-300 md:px-6 md:py-2  px-2 py-1 rounded-2xl cursor-pointer">
                 <Link href={'/register'}>Get Started</Link>
               </button>
             </div>
