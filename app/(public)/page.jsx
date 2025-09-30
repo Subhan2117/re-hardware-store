@@ -25,60 +25,7 @@ export default function page() {
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden">
       {/** NavaBar */}
       <Navbar />
-     {/* <nav className="fixed top-0 w-full z-50 backdrop-blur-xl border-b border-slate-200/50 bg-white/40 shadow-lg">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-600 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
-                <Hammer className="w-5 h-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-slate-800">
-                Re's Hardware
-              </span>
-            </div>
-
-            <div className="hidden md:flex items-center space-x-4 ">
-              <a
-                href="#"
-                className="text-slate-600 hover:text-amber-600 transition-all ease-in-out duration-300 font-medium 
-             px-4 py-2 rounded-lg hover:bg-white/30 hover:backdrop-blur-md  "
-              >
-                Home
-              </a>
-              <a
-                href="#"
-                className="text-slate-600 hover:text-amber-600 transition-all ease-in-out duration-300 font-medium 
-             px-4 py-2 rounded-lg hover:bg-white/30 hover:backdrop-blur-md "
-              >
-                Tools
-              </a>
-              <a
-                href="#"
-                className="text-slate-600 hover:text-amber-600 transition-all ease-in-out duration-300 font-medium 
-             px-4 py-2 rounded-lg hover:bg-white/30 hover:backdrop-blur-md "
-              >
-                Hardware
-              </a>
-              <a
-                href="#"
-                className="text-slate-600 hover:text-amber-600 transition-all ease-in-out duration-300 font-medium 
-             px-4 py-2 rounded-lg hover:bg-white/30 hover:backdrop-blur-md "
-              >
-                About
-              </a>
-            </div>
-
-            <div className="flex items-center space-x-3">
-              <button className=" text-amber-700 bg-amber-50/80 hover:from-amber-700 hover:to-orange-700  shadow-lg shadow-amber-500/20 transition-all duration-300 md:px-6 md:py-2  px-3 py-1 rounded-2xl cursor-pointer">
-                <Link href={'/login'}>Login</Link>
-              </button>
-              <button className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-500/20 transition-all duration-300 md:px-6 md:py-2  px-2 py-1 rounded-2xl cursor-pointer">
-                <Link href={'/register'}>Get Started</Link>
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>}
+     
       {/* Hero Section */}
 
       <section className="relative pt-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
