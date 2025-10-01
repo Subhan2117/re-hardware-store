@@ -62,12 +62,12 @@ export default function Page() {
               </h1>
               <h3 className="text-sm mx-auto mb-8 text-gray-500">
                 Already have an account?
-                <a
+                <Link
                   href="./login"
                   className="text-amber-600 font-semibold hover:underline"
                 >
                   Click Here
-                </a>
+                </Link>
               </h3>
               <div className="flex justify-center">
                 <button className="border border-gray-300 mb-5 w-full py-2 rounded-2xl shadow-2xl bg-gray-100 hover:bg-gray-200 cursor-pointer">
