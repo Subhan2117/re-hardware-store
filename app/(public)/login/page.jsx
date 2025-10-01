@@ -12,7 +12,7 @@ import uselogin from '@/app/hooks/useLogin';
 import { useAuth } from '@/api/login/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { googleAuth } from '@/api/login/firebase';
+import { googleAuth } from '@/api/firebase/firebase';
 
 export default function page() {
   const router = useRouter();
