@@ -11,7 +11,8 @@ import uselogin from '@/app/hooks/useLogin';
 
 import { useAuth } from '@/api/login/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { use, useState } from 'react';
+import { useState } from 'react';
+import { googleAuth } from '@/api/login/firebase';
 
 export default function page() {
   const router = useRouter();
@@ -29,13 +30,22 @@ export default function page() {
     setLoading(true);
     try {
       await login(email, password);
-      router.push("/"); // redirect on success
+      router.push("/");
     } catch (err) {
       setError("Failed to log in: " + err.message);
     } finally {
       setLoading(false);
     }
   }
+
+  const handleGoogleSignIn = async () => {
+    try {
+      await googleAuth();
+      router.push("/");
+    } catch (error) {
+      alert("Google sign-in failed: " + error.message);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden relative  px-4">
@@ -98,7 +108,9 @@ export default function page() {
             </div>
 
             <div className="flex justify-center">
-              <button className="border border-gray-300 mb-5 w-full py-2 rounded-2xl shadow-2xl bg-gray-100 hover:bg-gray-200 cursor-pointer">
+              <button
+                className="border border-gray-300 mb-5 w-full py-2 rounded-2xl shadow-2xl bg-gray-100 hover:bg-gray-200 cursor-pointer"
+                onClick={handleGoogleSignIn}>
                 Sign in With Google
               </button>
             </div>
