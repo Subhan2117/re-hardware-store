@@ -11,9 +11,14 @@ import {
   mockProducts,
 } from '@/app/mock-data/mockProducts.jsx';
 import ProductCard from '@/app/component/ProductCard.jsx';
-import { useState } from 'react';
+import { useRef, useState,useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 export default function Page() {
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get('search') || ''; // 👈 catch ?search=
+  const inputRef = useRef(null);
+
   const {
     searchQuery,
     selectedCategory,
@@ -30,6 +35,15 @@ export default function Page() {
   const handleAddToCart = (productId) => {
     setCart((prev) => ({ ...prev, [productId]: (prev[productId] || 0) + 1 }));
   };
+
+useEffect(() => {
+  if (initialSearch) {
+    setSearchQuery(initialSearch);
+    // optional: auto-focus the input
+    inputRef.current?.focus();
+  }
+}, [initialSearch, setSearchQuery]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden">
       <Navbar />
@@ -61,6 +75,7 @@ export default function Page() {
                 <input
                   id="search"
                   type="text"
+                  ref={inputRef}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search products..."
@@ -132,7 +147,9 @@ export default function Page() {
             {/* Active Filters */}
             <div className="mt-4 flex items-center gap-2 flex-wrap justify-between">
               <div className="flex mr-1">
-                <h1 className='font-semibold underline text-gray-700'>Active Filters: </h1>
+                <h1 className="font-semibold underline text-gray-700">
+                  Active Filters:{' '}
+                </h1>
                 <div>
                   {selectedCategory !== 'all' && (
                     <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
