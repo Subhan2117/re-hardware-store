@@ -9,7 +9,8 @@ import {
 import StoreClient from './StoreClient';
 
 
-export default async function Page({ searchParams }) {
+export default async function Page(props) {
+  const searchParams = await props.searchParams;
   // read initial search query from URL (?search=...)
   const initialSearch =
     typeof searchParams?.search === 'string' ? await searchParams.search : '';

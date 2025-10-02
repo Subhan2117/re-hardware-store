@@ -220,8 +220,8 @@ export default function StoreClient({
               <ProductCard
                 key={p.id}
                 product={p}
-                onAddToCart={() => handleAddToCart(p)}
-                cartQuantity={cart[p.id] || 0}
+                onAddToCart={() => handleAddToCart(p)} // ← pass product
+                cartQuantity={cart[p.id] || 0} // ← live quantity
               />
             ))}
 
