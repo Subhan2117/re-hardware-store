@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Hammer, Menu, X, ShoppingCart } from 'lucide-react';
+import { useCart } from '../context/CartContext';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
+  const { totalItems } = useCart();
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Store', href: '/store' },
@@ -42,8 +44,13 @@ export default function Navbar() {
           {/* Actions + Mobile toggle */}
           <div className=" hidden md:flex items-center space-x-3">
             <button className="text-slate-600 hover:text-amber-600 transition-all duration-300 mr-2">
-              <Link href={'/cart'}>
-                <ShoppingCart className="w-5 h-5" />
+              <Link href="/cart" className="relative">
+                <ShoppingCart className="w-6 h-6 text-slate-600 hover:text-amber-600" />
+                {totalItems > 0 && (
+                  <span className="absolute -top-2 -right-2 text-xs bg-amber-600 text-white rounded-full px-1.5 py-0.5">
+                    {totalItems}
+                  </span>
+                )}
               </Link>
             </button>
             <Link
@@ -60,11 +67,11 @@ export default function Navbar() {
             </Link>
           </div>
           {/* Hamburger (mobile only) */}
-           <button className=" hidden text-slate-600 hover:text-amber-600 transition-all duration-300 ">
-              <Link href={'/cart'}>
-                <ShoppingCart className="w-5 h-5" />
-              </Link>
-            </button>
+          <button className=" hidden text-slate-600 hover:text-amber-600 transition-all duration-300 ">
+            <Link href={'/cart'}>
+              <ShoppingCart className="w-5 h-5" />
+            </Link>
+          </button>
           <button
             className="md:hidden inline-flex items-center justify-center p-2 rounded-lg hover:bg-white/40"
             aria-label="Toggle menu"

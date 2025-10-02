@@ -5,6 +5,7 @@ import { Search } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import useCatalogFilters from '@/app/hooks/useCatalogFilters';
 import ProductCard from '@/app/component/ProductCard';
+import { useCart } from '@/app/context/CartContext';
 
 export default function StoreClient({
   mockProducts,
@@ -26,18 +27,8 @@ export default function StoreClient({
     clearFilters,
   } = useCatalogFilters(mockProducts);
 
-  const [cart, setCart] = useState({});
+  const { cart, addToCart } = useCart();
   const inputRef = useRef(null);
-
-  // Add to cart with stock cap
-  const handleAddToCart = (product) => {
-    setCart((prev) => {
-      const currentQty = prev[product.id] || 0;
-      if (!product.inStock) return prev; // guard
-      if (currentQty >= product.stock) return prev; // cap at stock
-      return { ...prev, [product.id]: currentQty + 1 };
-    });
-  };
 
   // Apply query from ?search= if present
   useEffect(() => {
@@ -220,7 +211,7 @@ export default function StoreClient({
               <ProductCard
                 key={p.id}
                 product={p}
-                onAddToCart={() => handleAddToCart(p)} // ← pass product
+                onAddToCart={() => addToCart(p)} // ← pass product
                 cartQuantity={cart[p.id] || 0} // ← live quantity
               />
             ))}

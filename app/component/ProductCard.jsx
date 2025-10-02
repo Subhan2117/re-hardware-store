@@ -9,10 +9,11 @@ export default function ProductCard({ product, onAddToCart, cartQuantity }) {
       {/* Product Image */}
       <div className="relative h-56 bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden">
         <Image
-          src={product.image || '/placeholder.svg'}
+          src={product.image || './public/hammer.jpg'}
           alt={product.name}
           fill
-          className="object-cover group-hover:scale-110 transition-transform duration-500"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-fill group-hover:scale-110 transition-transform duration-500"
         />
         {!product.inStock && (
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
