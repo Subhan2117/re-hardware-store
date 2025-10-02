@@ -17,7 +17,7 @@ export const mockProducts = [
     price: 34.99,
     stock: 42,
     rating: 4.9,
-    image: '/construction-hammer.png',
+    image: '/public/hammer.jpg',
     description: '16oz steel claw hammer with fiberglass handle',
     inStock: true,
   },
