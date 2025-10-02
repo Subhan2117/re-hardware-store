@@ -1,20 +1,20 @@
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import { AuthProvider } from "@/api/login/context/AuthContext";
+import { Geist, Geist_Mono } from 'next/font/google';
+import './globals.css';
+//import { AuthProvider } from "@/api/login/context/AuthContext";
 
 const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
+  variable: '--font-geist-sans',
+  subsets: ['latin'],
 });
 
 const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  variable: '--font-geist-mono',
+  subsets: ['latin'],
 });
 
 export const metadata = {
-  title: "Re-Hardware",
-  description: "Family Friendly Hardware Store",
+  title: 'Re-Hardware',
+  description: 'Family Friendly Hardware Store',
 };
 
 export default function RootLayout({ children }) {
@@ -23,9 +23,9 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <AuthProvider>
-          {children}
-        </AuthProvider>
+        {/**  <AuthProvider>*/}
+        {children}
+        {/*        </AuthProvider>*/}
       </body>
     </html>
   );

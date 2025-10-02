@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Star, ShoppingCart, Package } from "lucide-react";
-import Image from "next/image";
+import { Star, ShoppingCart, Package } from 'lucide-react';
+import Image from 'next/image';
 
 export default function ProductCard({ product, onAddToCart, cartQuantity }) {
   return (
@@ -9,7 +9,7 @@ export default function ProductCard({ product, onAddToCart, cartQuantity }) {
       {/* Product Image */}
       <div className="relative h-56 bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden">
         <Image
-          src={product.image || "/placeholder.svg"}
+          src={product.image || '/placeholder.svg'}
           alt={product.name}
           fill
           className="object-cover group-hover:scale-110 transition-transform duration-500"
@@ -53,8 +53,8 @@ export default function ProductCard({ product, onAddToCart, cartQuantity }) {
                 key={i}
                 className={`w-4 h-4 ${
                   i < Math.floor(product.rating)
-                    ? "fill-amber-500 text-amber-500"
-                    : "text-slate-300"
+                    ? 'fill-amber-500 text-amber-500'
+                    : 'text-slate-300'
                 }`}
               />
             ))}
@@ -68,7 +68,7 @@ export default function ProductCard({ product, onAddToCart, cartQuantity }) {
         <div className="flex items-center gap-2 mb-4">
           <Package className="w-4 h-4 text-slate-500" />
           <span className="text-sm text-slate-600">
-            {product.inStock ? `${product.stock} in stock` : "Out of stock"}
+            {product.inStock ? `${product.stock} in stock` : 'Out of stock'}
           </span>
         </div>
 

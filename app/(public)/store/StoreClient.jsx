@@ -29,8 +29,14 @@ export default function StoreClient({
   const [cart, setCart] = useState({});
   const inputRef = useRef(null);
 
-  const handleAddToCart = (productId) => {
-    setCart((prev) => ({ ...prev, [productId]: (prev[productId] || 0) + 1 }));
+  // Add to cart with stock cap
+  const handleAddToCart = (product) => {
+    setCart((prev) => {
+      const currentQty = prev[product.id] || 0;
+      if (!product.inStock) return prev; // guard
+      if (currentQty >= product.stock) return prev; // cap at stock
+      return { ...prev, [product.id]: currentQty + 1 };
+    });
   };
 
   // Apply query from ?search= if present
@@ -202,7 +208,9 @@ export default function StoreClient({
           <div className="mb-6">
             <p className="text-slate-600">
               Showing{' '}
-              <span className="font-bold text-slate-800">{filtered.length}</span>{' '}
+              <span className="font-bold text-slate-800">
+                {filtered.length}
+              </span>{' '}
               products
             </p>
           </div>
@@ -212,7 +220,7 @@ export default function StoreClient({
               <ProductCard
                 key={p.id}
                 product={p}
-                onAddToCart={handleAddToCart}
+                onAddToCart={() => handleAddToCart(p)}
                 cartQuantity={cart[p.id] || 0}
               />
             ))}

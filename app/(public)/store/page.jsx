@@ -9,10 +9,10 @@ import {
 import StoreClient from './StoreClient';
 
 
-export default function Page({ searchParams }) {
+export default async function Page({ searchParams }) {
   // read initial search query from URL (?search=...)
   const initialSearch =
-    typeof searchParams?.search === 'string' ? searchParams.search : '';
+    typeof searchParams?.search === 'string' ? await searchParams.search : '';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden">
