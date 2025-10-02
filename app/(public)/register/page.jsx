@@ -44,7 +44,7 @@ export default function Page() {
           <p className="flex flex-col text-xs md:text-sm text-gray-600">
             Already have an account?
             <Link
-              href="/register"
+              href="/login"
               className="text-orange-600 hover:text-orange-700 font-semibold"
             >
               Sign in

@@ -5,6 +5,7 @@ import { Search } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import useCatalogFilters from '@/app/hooks/useCatalogFilters';
 import ProductCard from '@/app/component/ProductCard';
+import { useCart } from '@/app/context/CartContext';
 
 export default function StoreClient({
   mockProducts,
@@ -26,12 +27,8 @@ export default function StoreClient({
     clearFilters,
   } = useCatalogFilters(mockProducts);
 
-  const [cart, setCart] = useState({});
+  const { cart, addToCart } = useCart();
   const inputRef = useRef(null);
-
-  const handleAddToCart = (productId) => {
-    setCart((prev) => ({ ...prev, [productId]: (prev[productId] || 0) + 1 }));
-  };
 
   // Apply query from ?search= if present
   useEffect(() => {
@@ -202,7 +199,9 @@ export default function StoreClient({
           <div className="mb-6">
             <p className="text-slate-600">
               Showing{' '}
-              <span className="font-bold text-slate-800">{filtered.length}</span>{' '}
+              <span className="font-bold text-slate-800">
+                {filtered.length}
+              </span>{' '}
               products
             </p>
           </div>
@@ -212,8 +211,8 @@ export default function StoreClient({
               <ProductCard
                 key={p.id}
                 product={p}
-                onAddToCart={handleAddToCart}
-                cartQuantity={cart[p.id] || 0}
+                onAddToCart={() => addToCart(p)} // ← pass product
+                cartQuantity={cart[p.id] || 0} // ← live quantity
               />
             ))}
 

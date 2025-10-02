@@ -1,7 +1,7 @@
-"use client";
+'use client';
 
-import { Star, ShoppingCart, Package } from "lucide-react";
-import Image from "next/image";
+import { Star, ShoppingCart, Package } from 'lucide-react';
+import Image from 'next/image';
 
 export default function ProductCard({ product, onAddToCart, cartQuantity }) {
   return (
@@ -9,10 +9,11 @@ export default function ProductCard({ product, onAddToCart, cartQuantity }) {
       {/* Product Image */}
       <div className="relative h-56 bg-gradient-to-br from-slate-100 to-slate-50 overflow-hidden">
         <Image
-          src={product.image || "/placeholder.svg"}
+          src={product.image || './public/hammer.jpg'}
           alt={product.name}
           fill
-          className="object-cover group-hover:scale-110 transition-transform duration-500"
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          className="object-fill group-hover:scale-110 transition-transform duration-500"
         />
         {!product.inStock && (
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center">
@@ -53,8 +54,8 @@ export default function ProductCard({ product, onAddToCart, cartQuantity }) {
                 key={i}
                 className={`w-4 h-4 ${
                   i < Math.floor(product.rating)
-                    ? "fill-amber-500 text-amber-500"
-                    : "text-slate-300"
+                    ? 'fill-amber-500 text-amber-500'
+                    : 'text-slate-300'
                 }`}
               />
             ))}
@@ -68,7 +69,7 @@ export default function ProductCard({ product, onAddToCart, cartQuantity }) {
         <div className="flex items-center gap-2 mb-4">
           <Package className="w-4 h-4 text-slate-500" />
           <span className="text-sm text-slate-600">
-            {product.inStock ? `${product.stock} in stock` : "Out of stock"}
+            {product.inStock ? `${product.stock} in stock` : 'Out of stock'}
           </span>
         </div>
 
@@ -78,7 +79,7 @@ export default function ProductCard({ product, onAddToCart, cartQuantity }) {
             ${product.price}
           </span>
           <button
-            onClick={() => onAddToCart(product.id)}
+            onClick={onAddToCart} // ← no args needed now
             disabled={!product.inStock}
             className="flex items-center px-4 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white text-sm font-semibold rounded-xl shadow-lg shadow-amber-500/20 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >

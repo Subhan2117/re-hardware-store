@@ -9,14 +9,14 @@ import { Lock } from 'lucide-react';
 import { EyeOff } from 'lucide-react';
 import uselogin from '@/app/hooks/useLogin';
 
-import { useAuth } from '@/api/login/context/AuthContext';
+// import { useAuth } from '@/api/login/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { googleAuth } from '@/api/firebase/firebase';
+// import { googleAuth } from '@/api/firebase/firebase';
 
 export default function page() {
   const router = useRouter();
-  const { login } = useAuth();
+  // const { login } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { showPassword, setShowPassword } = uselogin();

@@ -8,13 +8,14 @@ export default function useCatalogFilters(allProducts) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
-
   const slug = (s) => s.toLowerCase().replace(/\s+/g, '-');
 
   const filtered = useMemo(() => {
     return (allProducts || [])
       .filter((p) =>
-        selectedCategory === 'all' ? true : slug(p.category)  === selectedCategory
+        selectedCategory === 'all'
+          ? true
+          : slug(p.category) === selectedCategory
       )
       .filter((p) => {
         if (priceRange === 'all') return true;
