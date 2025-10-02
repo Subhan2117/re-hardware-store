@@ -3,42 +3,42 @@ import LiquidEther from "../../component/background/LiquidEther";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
-import longIsland from "./long island.jpg";
+import longIsland from "@/public/long island.jpg";
+import Navbar from "@/app/component/Navbar";
+
 
 export default function Page() {
   return (
-    <div className="py-10 min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 relative px-4">
+    <div className="py-10 min-h-screen bg-transparent bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 relative px-4">
 
-      {/* Back Button */}
-      <Link
-        href="/"
-        className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-orange-500 text-white font-semibold hover:bg-orange-600 transition mb-12"
-      >
-        <ArrowLeft size={18} />
-        Back to Home
-      </Link>
+    <Navbar/>
+     
 
       {/* Background */}
-      <div className="absolute inset-0">
-        <LiquidEther
-          colors={["#F8FAFC", "#FFEDD5", "#FFE0B2"]}
-          mouseForce={20}
-          cursorSize={100}
-          isViscous={false}
-          viscous={30}
-          iterationsViscous={32}
-          iterationsPoisson={32}
-          resolution={0.5}
-          isBounce={false}
-          autoDemo={true}
-          autoSpeed={0.5}
-          autoIntensity={2.2}
-          takeoverDuration={0.25}
-          autoResumeDelay={3000}
-          autoRampDuration={0.6}
-        />
+
+      <div>
+        <div className="absolute inset-0">
+          <LiquidEther
+            colors={["#F8FAFC", "#FFEDD5", "#FFE0B2"]}
+            mouseForce={20}
+            cursorSize={100}
+            isViscous={false}
+            viscous={30}
+            iterationsViscous={32}
+            iterationsPoisson={32}
+            resolution={0.5}
+            isBounce={false}
+            autoDemo={true}
+            autoSpeed={0.5}
+            autoIntensity={2.2}
+            takeoverDuration={0.25}
+            autoResumeDelay={3000}
+            autoRampDuration={0.6}
+          />
+        </div>
       </div>
 
+    <div className="bg-transparent">
       {/* Header */}
       <header className="relative z-10 text-center py-16">
         <h1 className="text-5xl font-bold mb-4 drop-shadow-lg tracking-wide">About Re's Hardware Store</h1>
@@ -122,7 +122,7 @@ export default function Page() {
           Come visit us today and let’s make your visions come to life! 
         </p>
       </section>
-
+    </div>
     </div>
   );
 }
