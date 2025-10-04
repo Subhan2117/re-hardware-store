@@ -43,7 +43,7 @@ export default function Page() {
       <header className="relative z-10 text-center py-16">
         <h1 className="text-5xl font-bold mb-4 drop-shadow-lg tracking-wide">About Re's Hardware Store</h1>
         <p className="text-lg font-semibold text-gray-800">
-          Serving Long Island since 2010
+          Serving Long Island since 1995
         </p>
       </header>
 
@@ -53,7 +53,7 @@ export default function Page() {
         <p className="text-lg text-gray-800">
           Welcome to <strong>Re’s Hardware Store</strong>, your trusted neighborhood hardware store.
           Our story begins with our founder, <strong>Professor Re</strong>, who wanted to give back to his community.
-          Ever since 2010, he has been committed to helping homeowners, contractors, and DIY enthusiasts find exactly what they need to get the job done right.
+          Ever since 1995, he has been committed to helping homeowners, contractors, and DIY enthusiasts find exactly what they need to get the job done right.
         </p>
       </section>
 
