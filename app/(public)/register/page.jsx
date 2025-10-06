@@ -1,9 +1,61 @@
 "use client";
+
+import { useState } from "react";  
+import { auth, db, googleAuth, emailAuth } from "../../../api/firebase/firebase"; 
+import { setDoc, doc } from "firebase/firestore"; 
 import { Badge } from 'lucide-react';
 import LiquidEther from '../../component/background/LiquidEther';
 import { CheckCircle } from 'lucide-react';
 
 export default function Page() {
+
+  // STATE HOOKS
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+
+  // HANDLE GOOGLE SIGN UP
+  const handleGoogleSignUp = async () => {
+    try {
+      const result = await googleAuth();
+      const user = result.user;
+
+      // save to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        name: user.displayName,
+        email: user.email,
+        createdAt: new Date(),
+      });
+
+      setSuccess("Signed up successfully with Google!");
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+   // HANDLE EMAIL SIGN UP
+  const handleEmailSignUp = async (e) => {
+    e.preventDefault();
+    try {
+      const result = await emailAuth(email, password);
+      const user = result.user;
+
+      // save to Firestore
+      await setDoc(doc(db, "users", user.uid), {
+        name: fullName,
+        email: user.email,
+        createdAt: new Date(),
+      });
+
+      setSuccess("Account created successfully!");
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden relative flex items-center justify-center px-4">
@@ -39,16 +91,27 @@ export default function Page() {
             Already have an account?<a href="./login" className="text-amber-600 font-semibold hover:underline">Click Here</a>
             </h3>
             <div className="flex justify-center">
-              <button className="border border-gray-300 mb-5 w-full py-2 rounded-2xl shadow-2xl bg-gray-100 hover:bg-gray-200 cursor-pointer">
+              <button 
+              onClick = {handleGoogleSignUp}
+              className="border border-gray-300 mb-5 w-full py-2 rounded-2xl shadow-2xl bg-gray-100 hover:bg-gray-200 cursor-pointer"
+              >
                 Sign in With Google
               </button>
             </div>
+
+            {/*ERROR / SUCCESS MESSAGES*/}
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {success && <p className="text-green-600 text-sm">{success}</p>}
+
+            {/*EMAIL SIGN UP FORM*/}
             <br></br>
-            <form className="space-y-4">
+            <form className="space-y-4" onSubmit = {handleEmailSignUp}>
               <div className="p-2 bg-white rounded-2xl shadow-2xl border border-gray-100">
                 <input
                   type="text"
                   placeholder="Full Name"
+                  value = {fullName}
+                  onChange={(e) => setFullName(e.target.value)}
                   className="w-full h-10 px-6 border-0 rounded-xl text-lg text-gray-700 md:text-xl placeholder:text-gray-400 focus:ring-0 focus:outline-none"
                   required
                 />
@@ -57,6 +120,8 @@ export default function Page() {
                 <input
                   type="email"
                   placeholder="Email Address"
+                  value = {email}
+                  onChange={(e) => setEmail(e.target.value)}
                   className="w-full h-10 px-6 border-0 rounded-xl text-lg text-gray-700 md:text-xl placeholder:text-gray-400 focus:ring-0 focus:outline-none"
                   required
                 />
@@ -65,6 +130,8 @@ export default function Page() {
                 <input
                   type="password"
                   placeholder="Password"
+                  value = {password}
+                  onChange={(e) => setPassword(e.target.value)}
                   className="w-full h-10 px-6 border-0 rounded-xl text-lg text-gray-700 md:text-xl placeholder:text-gray-400 focus:ring-0 focus:outline-none"
                   required
                 />
