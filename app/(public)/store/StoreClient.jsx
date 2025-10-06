@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import useCatalogFilters from '@/app/hooks/useCatalogFilters';
 import ProductCard from '@/app/component/ProductCard';
 import { useCart } from '@/app/context/CartContext';
-
+import Link from 'next/link';
 export default function StoreClient({
   mockProducts,
   categoryOptions,
@@ -208,12 +208,14 @@ export default function StoreClient({
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             {filtered.map((p) => (
-              <ProductCard
-                key={p.id}
-                product={p}
-                onAddToCart={() => addToCart(p)} // ← pass product
-                cartQuantity={cart[p.id] || 0} // ← live quantity
-              />
+              <Link href={`/store/${p.id}`}>
+                <ProductCard
+                  key={p.id}
+                  product={p}
+                  onAddToCart={() => addToCart(p)} // ← pass product
+                  cartQuantity={cart[p.id] || 0} // ← live quantity
+                />
+              </Link>
             ))}
 
             {!filtered.length && (
