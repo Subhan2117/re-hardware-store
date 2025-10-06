@@ -17,7 +17,6 @@ import { googleAuth } from '@/api/firebase/firebase';
 export default function page() {
   const router = useRouter();
   const { login } = useAuth();
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { showPassword, setShowPassword } = uselogin();
@@ -26,13 +25,13 @@ export default function page() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setError("");
+    setError('');
     setLoading(true);
     try {
       await login(email, password);
-      router.push("/");
+      router.push('/');
     } catch (err) {
-      setError("Failed to log in: " + err.message);
+      setError('Failed to log in: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -41,9 +40,9 @@ export default function page() {
   const handleGoogleSignIn = async () => {
     try {
       await googleAuth();
-      router.push("/");
+      router.push('/');
     } catch (error) {
-      alert("Google sign-in failed: " + error.message);
+      alert('Google sign-in failed: ' + error.message);
     }
   };
 
@@ -110,7 +109,8 @@ export default function page() {
             <div className="flex justify-center">
               <button
                 className="border border-gray-300 mb-5 w-full py-2 rounded-2xl shadow-2xl bg-gray-100 hover:bg-gray-200 cursor-pointer"
-                onClick={handleGoogleSignIn}>
+                onClick={handleGoogleSignIn}
+              >
                 Sign in With Google
               </button>
             </div>

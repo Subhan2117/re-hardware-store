@@ -5,7 +5,8 @@ import { auth, db, googleAuth, emailAuth } from "../../../api/firebase/firebase"
 import { setDoc, doc } from "firebase/firestore"; 
 import { Badge } from 'lucide-react';
 import LiquidEther from '../../component/background/LiquidEther';
-import { CheckCircle } from 'lucide-react';
+import { ArrowLeft, Hammer } from 'lucide-react';
+import Link from 'next/link';
 
 export default function Page() {
 
@@ -56,12 +57,11 @@ export default function Page() {
   };
 
 
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden relative flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden relative  px-4">
       <div className="absolute inset-0">
         <LiquidEther
-          colors={["#F8FAFC", "#FFEDD5", "#FFE0B2"]}
+          colors={['#F8FAFC', '#FFEDD5', '#FFE0B2']}
           mouseForce={20}
           cursorSize={100}
           isViscous={false}
