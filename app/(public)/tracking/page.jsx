@@ -1,12 +1,12 @@
-"use client";
-import React, { useState } from "react";
-import Navbar from "@/app/component/Navbar";
-import { Search } from "lucide-react";
-import { mockProducts } from "@/app/mock-data/mockProducts"; 
-import { mockOrders } from "@/app/mock-data/mockOrders"; 
+'use client';
+import React, { useState } from 'react';
+import Navbar from '@/app/component/Navbar';
+import { Search } from 'lucide-react';
+import { mockProducts } from '@/app/mock-data/mockProducts';
+import { mockOrders } from '@/app/mock-data/mockOrders';
 
 export default function Page() {
-  const [trackingNumber, setTrackingNumber] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState('');
   const [searchedOrder, setSearchedOrder] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
@@ -44,7 +44,9 @@ export default function Page() {
       {/* Header */}
       <div className="mt-20 text-center">
         <header className="relative z-10 py-10">
-          <h1 className="text-5xl font-bold mb-4 text-gray-900">Track Your Order</h1>
+          <h1 className="text-5xl font-bold mb-4 text-gray-900">
+            Track Your Order
+          </h1>
           <p className="text-base font-semibold text-gray-800">
             Enter your tracking number to view your order status.
           </p>
@@ -69,11 +71,13 @@ export default function Page() {
               type="submit"
               disabled={isSearching || !trackingNumber.trim()}
               className={`px-6 py-3 rounded-lg text-white font-semibold transition 
-                ${isSearching || !trackingNumber.trim()
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-amber-600 to-orange-600 hover:opacity-90"}`}
+                ${
+                  isSearching || !trackingNumber.trim()
+                    ? 'bg-gray-400 cursor-not-allowed'
+                    : 'bg-gradient-to-r from-amber-600 to-orange-600 hover:opacity-90'
+                }`}
             >
-              {isSearching ? "Searching..." : "Track Order"}
+              {isSearching ? 'Searching...' : 'Track Order'}
             </button>
           </form>
         </div>
@@ -96,14 +100,14 @@ export default function Page() {
               </p>
               <p
                 className={`mt-1 font-semibold ${
-                  searchedOrder.status === "in_transit"
-                    ? "text-green-600"
-                    : searchedOrder.status === "out_for_delivery"
-                    ? "text-blue-600"
-                    : "text-red-600"
+                  searchedOrder.status === 'in_transit'
+                    ? 'text-green-600'
+                    : searchedOrder.status === 'out_for_delivery'
+                    ? 'text-blue-600'
+                    : 'text-red-600'
                 }`}
               >
-                {searchedOrder.status.replace("_", " ")}
+                {searchedOrder.status.replace('_', ' ')}
               </p>
               <p className="text-gray-600 mt-1 text-sm">
                 Estimated Delivery: {searchedOrder.estimatedDelivery}
