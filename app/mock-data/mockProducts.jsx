@@ -7,8 +7,28 @@ export const mockProducts = [
     stock: 15,
     rating: 4.8,
     image: '/professional-cord-drill.jpg',
+    images:['/professional-cord-drill.jpg','/professional-cord-drill.jpg'],
     description: '20V MAX lithium-ion cordless drill with 2 batteries',
     inStock: true,
+    longDescription:
+      'This professional-grade cordless drill features a powerful 20V MAX lithium-ion battery system that delivers exceptional performance and runtime. Perfect for both professional contractors and DIY enthusiasts, this drill offers variable speed control, LED work light, and ergonomic design for comfortable extended use.',
+    inStock: true,
+    specifications: {
+      Voltage: '20V MAX',
+      'Battery Type': 'Lithium-Ion',
+      'Chuck Size': '1/2 inch',
+      'Max Torque': '300 in-lbs',
+      Weight: '3.5 lbs',
+      'Batteries Included': '2',
+      Warranty: '3 years',
+    },
+    features: [
+      'Variable speed trigger for precise control',
+      'LED work light illuminates dark work areas',
+      'Ergonomic handle reduces fatigue',
+      'Quick-release chuck for easy bit changes',
+      'Includes carrying case and accessories',
+    ],
   },
   {
     id: '2',
@@ -20,6 +40,24 @@ export const mockProducts = [
     image: '/hammer.jpg',
     description: '16oz steel claw hammer with fiberglass handle',
     inStock: true,
+    longDescription:
+      'Built for durability and precision, this heavy-duty hammer features a forged steel head and shock-absorbing fiberglass handle. The balanced design reduces fatigue during extended use, making it perfect for framing, demolition, and general construction work.',
+    inStock: true,
+    specifications: {
+      Weight: '16 oz',
+      'Handle Material': 'Fiberglass',
+      'Head Material': 'Forged Steel',
+      Length: '13 inches',
+      'Grip Type': 'Cushioned',
+      Warranty: 'Lifetime',
+    },
+    features: [
+      'Forged steel head for maximum durability',
+      'Shock-absorbing fiberglass handle',
+      'Cushioned grip for comfort',
+      'Magnetic nail starter',
+      'Balanced design reduces fatigue',
+    ],
   },
   {
     id: '3',
@@ -31,6 +69,25 @@ export const mockProducts = [
     image: '/saw.JPEG',
     description: '7-1/4 inch circular saw with laser guide',
     inStock: true,
+    longDescription:
+      'This powerful circular saw delivers clean, accurate cuts with its 15-amp motor and laser guide system. The lightweight magnesium construction and ergonomic design make it easy to handle, while the electric brake stops the blade quickly for enhanced safety.',
+    inStock: true,
+    specifications: {
+      'Blade Size': '7-1/4 inch',
+      'Motor Power': '15 Amp',
+      'No-Load Speed': '5,800 RPM',
+      'Bevel Capacity': '0-56 degrees',
+      Weight: '8.8 lbs',
+      'Laser Guide': 'Yes',
+      Warranty: '3 years',
+    },
+    features: [
+      'Powerful 15-amp motor for tough cuts',
+      'Laser guide for precise cutting',
+      'Lightweight magnesium construction',
+      'Electric brake for safety',
+      'Dust blower keeps cut line clear',
+    ],
   },
   {
     id: '4',
@@ -50,7 +107,7 @@ export const mockProducts = [
     price: 19.99,
     stock: 0,
     rating: 4.5,
-    image: '/paint-roller.png',
+    image: '/paint roller.JPEG',
     description: 'Professional paint roller with 3 refills',
     inStock: false,
   },
@@ -61,7 +118,7 @@ export const mockProducts = [
     price: 44.99,
     stock: 19,
     rating: 4.8,
-    image: '/wrench-set.jpg',
+    image: '/wrenches.JPEG',
     description: '3-piece adjustable wrench set (6, 8, 10 inch)',
     inStock: true,
   },
@@ -72,7 +129,7 @@ export const mockProducts = [
     price: 79.99,
     stock: 12,
     rating: 4.7,
-    image: '/electric-sander.jpg',
+    image: '/electric sander.JPEG',
     description: 'Random orbital sander with dust collection',
     inStock: true,
   },
@@ -83,7 +140,7 @@ export const mockProducts = [
     price: 29.99,
     stock: 35,
     rating: 4.6,
-    image: '/colorful-paintbrushes.png',
+    image: '/paint brush set.JPEG',
     description: 'Professional 10-piece paint brush set',
     inStock: true,
   },
@@ -91,21 +148,52 @@ export const mockProducts = [
 
 // filtersConfig.js (or keep inline)
 export const categoryOptions = [
-  { label: "All Categories", value: "all" },
-  { label: "Power Tools", value: "power-tools" },
-  { label: "Hand Tools", value: "hand-tools" },
-  { label: "Painting", value: "painting" },
+  { label: 'All Categories', value: 'all' },
+  { label: 'Power Tools', value: 'power-tools' },
+  { label: 'Hand Tools', value: 'hand-tools' },
+  { label: 'Painting', value: 'painting' },
 ];
 
 export const priceOptions = [
-  { label: "All Prices", value: "all" },
-  { label: "Under $50", value: "under50" },
-  { label: "$50 - $100", value: "50to100" },
-  { label: "Over $100", value: "over100" },
+  { label: 'All Prices', value: 'all' },
+  { label: 'Under $50', value: 'under50' },
+  { label: '$50 - $100', value: '50to100' },
+  { label: 'Over $100', value: 'over100' },
 ];
 
 export const stockOptions = [
-  { label: "All Items", value: "all" },
-  { label: "In Stock", value: "instock" },
-  { label: "Out of Stock", value: "outofstock" },
+  { label: 'All Items', value: 'all' },
+  { label: 'In Stock', value: 'instock' },
+  { label: 'Out of Stock', value: 'outofstock' },
 ];
+
+
+export const mockReviews = [
+  {
+    id: "1",
+    author: "John D.",
+    rating: 5,
+    date: "2 weeks ago",
+    title: "Excellent quality!",
+    comment: "This tool exceeded my expectations. Very powerful and well-built. Highly recommend for professionals.",
+    verified: true,
+  },
+  {
+    id: "2",
+    author: "Sarah M.",
+    rating: 4,
+    date: "1 month ago",
+    title: "Great value for money",
+    comment: "Works perfectly for my DIY projects. The battery life is impressive and it's comfortable to use.",
+    verified: true,
+  },
+  {
+    id: "3",
+    author: "Mike R.",
+    rating: 5,
+    date: "2 months ago",
+    title: "Professional grade",
+    comment: "I use this daily on job sites. It's durable, reliable, and has great power. Worth every penny.",
+    verified: true,
+  },
+]

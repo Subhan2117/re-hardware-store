@@ -20,6 +20,7 @@ export default async function Page(props) {
       <Navbar />
 
       <StoreClient
+      
         mockProducts={mockProducts}
         categoryOptions={categoryOptions}
         priceOptions={priceOptions}

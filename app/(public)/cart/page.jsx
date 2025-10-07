@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useMemo } from 'react';
 import { useCart } from '@/app/context/CartContext';
 // Adjust this import to your actual product source:
-import { mockProducts } from '@/app/mock-data/mockProducts.jsx'
+import { mockProducts } from '@/app/mock-data/mockProducts.jsx';
 
 const TAX_RATE = 0.085;
 const SHIPPING_FLAT = 12.99;
@@ -53,10 +53,7 @@ export default function Page() {
   }, [cart, productById]);
 
   // Totals
-  const subtotal = items.reduce(
-    (sum, it) => sum + it.price * it.quantity,
-    0
-  );
+  const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
   const shipping = items.length > 0 ? SHIPPING_FLAT : 0;
   const tax = subtotal * TAX_RATE;
   const total = (subtotal + shipping + tax).toFixed(2);
@@ -220,9 +217,7 @@ export default function Page() {
 
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-black/60">Shipping</span>
-                    <span className="font-medium">
-                      ${shipping.toFixed(2)}
-                    </span>
+                    <span className="font-medium">${shipping.toFixed(2)}</span>
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
@@ -239,13 +234,16 @@ export default function Page() {
                 </div>
               <Link href="/checkout">
                 <button className="w-full mb-5 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-3 text-white font-semibold hover:opacity-90 active:opacity-80 transition">
-                  Proceed to Checkout
+                  <Link href={'/checkout'}>Proceed to Checkout</Link>
                 </button>
               </Link>
 
                 {/* Promo Code (non-functional placeholder) */}
                 <div>
-                  <label htmlFor="promo" className="block text-sm font-medium mb-2">
+                  <label
+                    htmlFor="promo"
+                    className="block text-sm font-medium mb-2"
+                  >
                     Promo Code
                   </label>
                   <div className="flex gap-2">
