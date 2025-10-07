@@ -12,6 +12,7 @@ export default function Navbar() {
     { label: 'Home', href: '/' },
     { label: 'Store', href: '/store' },
     { label: 'About', href: '/about' },
+    { label: 'Track Order', href: '/tracking'}
   ];
 
   return (
