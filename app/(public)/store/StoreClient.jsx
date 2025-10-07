@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import useCatalogFilters from '@/app/hooks/useCatalogFilters';
 import ProductCard from '@/app/component/ProductCard';
 import { useCart } from '@/app/context/CartContext';
-import Link from 'next/link';
+
 export default function StoreClient({
   mockProducts,
   categoryOptions,
@@ -135,18 +135,17 @@ export default function StoreClient({
           </div>
 
           {/* Active Filters */}
-          <div className="mt-4 flex items-center gap-2 flex-wrap justify-between">
-            <div className="flex mr-1">
-              <h1 className="font-semibold underline text-gray-700">
-                Active Filters:{' '}
-              </h1>
+         <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+  <div className="flex items-center gap-2 flex-wrap">
+    <span className="font-semibold text-gray-700">Active Filters:</span>
+
               <div>
                 {selectedCategory !== 'all' && (
                   <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
                     {selectedCategory}
                     <button
                       onClick={() => setSelectedCategory('all')}
-                      className="ml-2 hover:text-amber-900"
+                      className="ml-2 hover:text-amber-900 cursor-pointer"
                     >
                       ×
                     </button>
@@ -161,7 +160,7 @@ export default function StoreClient({
                       : 'Over $100'}
                     <button
                       onClick={() => setPriceRange('all')}
-                      className="ml-2 hover:text-amber-900"
+                      className="ml-2 hover:text-amber-900 cursor-pointer"
                     >
                       ×
                     </button>
@@ -172,7 +171,7 @@ export default function StoreClient({
                     {stockFilter === 'instock' ? 'In Stock' : 'Out of Stock'}
                     <button
                       onClick={() => setStockFilter('all')}
-                      className="ml-2 hover:text-amber-900"
+                      className="ml-2 hover:text-amber-900 cursor-pointer"
                     >
                       ×
                     </button>
@@ -185,7 +184,7 @@ export default function StoreClient({
               <button
                 type="button"
                 onClick={clearFilters}
-                className="text-sm bg-gradient-to-r text-white from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700  px-3 py-1.5 rounded-2xl"
+                className="self-start sm:self-auto text-sm bg-gradient-to-r text-white from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 px-3 py-1.5 rounded-2xl cursor-pointer"
               >
                 Clear all filters
               </button>
@@ -196,7 +195,7 @@ export default function StoreClient({
         {/* Results */}
         <div>
           {/* Results Count */}
-          <div className="mb-6">
+          <div className="mb-6" aria-live="polite">
             <p className="text-slate-600">
               Showing{' '}
               <span className="font-bold text-slate-800">
@@ -206,16 +205,29 @@ export default function StoreClient({
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div
+            className="
+      grid gap-4 sm:gap-6
+      [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))]
+      md:[grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]
+      xl:[grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]
+      auto-rows-fr
+      items-stretch
+    "
+          >
             {filtered.map((p) => (
-              <Link href={`/store/${p.id}`}>
+              <div key={p.id} className="relative h-full group">
+                {/* Overlay link makes the *card* clickable but not the controls */}
+   
                 <ProductCard
-                  key={p.id}
                   product={p}
-                  onAddToCart={() => addToCart(p)} // ← pass product
-                  cartQuantity={cart[p.id] || 0} // ← live quantity
+                  onAddToCart={() => addToCart(p)}
+                  cartQuantity={cart[p.id] || 0}
+                  // Make sure the card itself stretches to equal the grid row height:
+                  className="h-full"
+
                 />
-              </Link>
+              </div>
             ))}
 
             {!filtered.length && (
