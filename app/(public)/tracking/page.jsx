@@ -1,4 +1,5 @@
-// app/track/page.jsx
+//app/track/page.jsx
+//server component
 
 import Navbar from '@/app/component/Navbar';
 import ClientTrackingPage from './ClientTrackingPage';
@@ -20,7 +21,7 @@ export default function Page() {
         </header>
       </div>
 
-      {/* Client-side logic lives here */}
+      {/* Client-side file */}
       <ClientTrackingPage />
 
       {/* Footer */}
