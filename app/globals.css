@@ -8,3 +8,9 @@
     transform: translateY(-8px);
   }
 }
+/* globals.css */
+@media (min-width: 1024px) {
+  .admin-main {
+    padding-left: var(--sidebar-width, 16rem); /* default 16rem (w-64) */
+  }
+}
