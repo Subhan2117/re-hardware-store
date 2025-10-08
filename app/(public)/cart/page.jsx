@@ -11,6 +11,16 @@ import { mockProducts } from '@/app/mock-data/mockProducts.jsx';
 const TAX_RATE = 0.085;
 const SHIPPING_FLAT = 12.99;
 
+
+export function calculateTotals(items) {
+  const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
+  const shipping = items.length > 0 ? SHIPPING_FLAT : 0;
+  const tax = subtotal * TAX_RATE;
+  const total = +(subtotal + shipping + tax).toFixed(2);
+  return { subtotal, shipping, tax, total };
+}
+
+
 export default function Page() {
   const { cart, addToCart, setCart } = useCart();
 
@@ -52,11 +62,8 @@ export default function Page() {
       .filter(Boolean);
   }, [cart, productById]);
 
-  // Totals
-  const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);
-  const shipping = items.length > 0 ? SHIPPING_FLAT : 0;
-  const tax = subtotal * TAX_RATE;
-  const total = (subtotal + shipping + tax).toFixed(2);
+// Totals 
+  const { subtotal, shipping, tax, total } = calculateTotals(items);
 
   return (
     <div>
@@ -229,7 +236,7 @@ export default function Page() {
 
                   <div className="flex items-center justify-between">
                     <span className="text-xl font-bold">Total</span>
-                    <span className="text-3xl font-extrabold">${total}</span>
+                    <span className="text-3xl font-extrabold">${total.toFixed(2)}</span>
                   </div>
                 </div>
               <Link href="/checkout">

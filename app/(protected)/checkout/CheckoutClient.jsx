@@ -1,7 +1,34 @@
 'use client';
 import Navbar from "@/app/component/Navbar";
+import { useMemo } from "react";
+import { calculateTotals } from "@/app/(public)/cart/page";
+import { useCart } from "@/app/context/CartContext";
+import { mockProducts } from "@/app/mock-data/mockProducts.jsx";
 
 export default function CheckoutClient() {
+
+  // BELOW IS NEEDED TO CALCULATE ITEM COST AGAIN 
+  const { cart } = useCart();
+
+  const productById = useMemo(() => {
+    const map = {};
+    (mockProducts || []).forEach((p) => (map[p.id] = p));
+    return map;
+  }, []);
+
+  const items = useMemo(() => {
+    return Object.entries(cart || {})
+      .map(([id, qty]) => {
+        const p = productById[id];
+        if (!p) return null;
+        return { ...p, quantity: qty };
+      })
+      .filter(Boolean);
+  }, [cart, productById]);
+
+  const { subtotal, shipping, tax, total } = calculateTotals(items);
+
+
   return (
     <div>
       <Navbar />
@@ -255,23 +282,24 @@ export default function CheckoutClient() {
 
             <div className="flex items-center justify-between">
               <span className="text-slate-600">Subtotal</span>
-              <span className="font-medium">—</span>
+              <span className="font-medium">${subtotal.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-600">Shipping</span>
-              <span className="font-medium">—</span>
+              <span className="font-medium">${shipping.toFixed(2)}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-600">Tax</span>
-              <span className="font-medium">—</span> 
+              <span className="font-medium">${tax.toFixed(2)}</span>
             </div>
 
             <hr className="my-4" />
 
             <div className="text-base font-semibold flex items-center justify-between">
               <span>Total</span>
-              <span>—</span>
+              <span>${total.toFixed(2)}</span>
             </div>
+
 
             <ul className="mt-4 space-y-2 text-xs text-slate-600">
               <li className="flex items-center gap-2">
