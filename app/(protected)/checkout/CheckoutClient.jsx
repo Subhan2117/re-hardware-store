@@ -44,7 +44,7 @@ export default function CheckoutClient() {
         }}
       >
        
-        <div className="grid grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
           
           {/* LEFT COLUMN: your three sections (unchanged content) */}
           <div className="grid gap-6">
@@ -273,7 +273,7 @@ export default function CheckoutClient() {
           </div>
 
           {/* RIGHT COLUMN: Order Summary */}
-          <aside className="h-max rounded-2xl border bg-white/80 shadow-sm backdrop-blur p-5 md:p-6 sticky top-24">
+          <aside className="h-max rounded-2xl border bg-white/80 shadow-sm backdrop-blur p-5 md:p-6 md:sticky md:top-24">
             <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
 
             {/* HERE WOULD GO THE LIST OF THINGS WE ARE BUYING*/}
