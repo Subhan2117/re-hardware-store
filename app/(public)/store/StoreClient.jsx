@@ -6,14 +6,35 @@ import { useState, useEffect, useRef } from 'react';
 import useCatalogFilters from '@/app/hooks/useCatalogFilters';
 import ProductCard from '@/app/component/ProductCard';
 import { useCart } from '@/app/context/CartContext';
+import { db } from '@/api/firebase/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 export default function StoreClient({
-  mockProducts,
   categoryOptions,
   priceOptions,
   stockOptions,
   initialSearch = '',
 }) {
+  const [products, setProducts] = useState([]);
+
+  // Fetch products from Firebase
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, 'products'));
+        const data = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setProducts(data)
+      } catch (error) {
+        console.error("Error fetching products:", error)
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
   const {
     searchQuery,
     selectedCategory,
@@ -25,7 +46,7 @@ export default function StoreClient({
     setStockFilter,
     filtered,
     clearFilters,
-  } = useCatalogFilters(mockProducts);
+  } = useCatalogFilters(products);
 
   const { cart, addToCart } = useCart();
   const inputRef = useRef(null);

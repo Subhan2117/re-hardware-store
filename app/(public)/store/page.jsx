@@ -4,7 +4,6 @@ import {
   categoryOptions,
   priceOptions,
   stockOptions,
-  mockProducts,
 } from '@/app/mock-data/mockProducts';
 import StoreClient from './StoreClient';
 
@@ -21,7 +20,6 @@ export default async function Page(props) {
 
       <StoreClient
       
-        mockProducts={mockProducts}
         categoryOptions={categoryOptions}
         priceOptions={priceOptions}
         stockOptions={stockOptions}
