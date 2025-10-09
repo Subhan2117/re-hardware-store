@@ -144,6 +144,17 @@ export const mockProducts = [
     description: 'Professional 10-piece paint brush set',
     inStock: true,
   },
+    {
+    id: '9',
+    name: 'Tool Chest Combo',
+    category: 'Painting',
+    price: 599.99,
+    stock: 35,
+    rating: 4.6,
+    image: '/tool-chest.jpg',
+    description: 'Professional 10-piece paint brush set',
+    inStock: true,
+  },
 ];
 
 // filtersConfig.js (or keep inline)
