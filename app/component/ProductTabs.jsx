@@ -1,9 +1,34 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, Star } from 'lucide-react';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/api/firebase/firebase';
 
-export default function ProductTabs({ product, mockReviews }) {
+export default function ProductTabs({ productId, mockReviews }) {
   const [activeTab, setActiveTab] = useState('features');
+  const [product, setProduct] = useState(null);
+
+  useEffect(() => {
+      if (!productId) return;
+  
+      const fetchProduct = async () => {
+        try {
+          const docRef = doc(db, 'products', productId);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setProduct({ id: docSnap.id, ...docSnap.data() });
+          } else {
+            setProduct(null);
+          }
+        } catch (error) {
+          console.error('Error fetching product:', error);
+        }
+      };
+  
+      fetchProduct();
+    }, [productId]);
+  
+  if (!product) return <p className="text-slate-600">Couldn't load tabs, product not found.</p>;
 
   return (
     <div className="backdrop-blur-lg border border-slate-200/30 bg-white/70 rounded-3xl p-8 mt-12">

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
@@ -14,26 +14,50 @@ import {
   Check,
 } from 'lucide-react';
 import { useCart } from '@/app/context/CartContext';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/api/firebase/firebase';
 
 
-export default function ProductDetailsClient({ product }) {
+export default function ProductDetailsClient({ productId }) {
   const router = useRouter();
   const { cart, addToCart, setCart } = useCart();
+
+  const [product, setProduct] = useState(null);
 
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
 
-  const currentQtyInCart = Number(cart?.[product.id] || 0);
+  useEffect(() => {
+    if (!productId) return;
+
+    const fetchProduct = async () => {
+      try {
+        const docRef = doc(db, 'products', productId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setProduct({ id: docSnap.id, ...docSnap.data() });
+        } else {
+          setProduct(null);
+        }
+      } catch (error) {
+        console.error('Error fetching product:', error);
+      }
+    };
+
+    fetchProduct();
+  }, [productId]);
+
+  const currentQtyInCart = Number(cart?.[product?.id] || 0);
   const stock = Number(product?.stock ?? 0);
   const inStock = Boolean(product?.inStock);
   const maxAddable = Math.max(0, stock - currentQtyInCart);
 
   const images = useMemo(
     () =>
-      Array.isArray(product.images) && product.images.length
+      Array.isArray(product?.images) && product.images.length
         ? product.images
-        : [product.image || '/placeholder.svg'],
-    [product.images, product.image]
+        : [product?.image || '/placeholder.svg'],
+    [product]
   );
 
   const dec = useCallback(() => {
@@ -76,7 +100,14 @@ export default function ProductDetailsClient({ product }) {
     router.push('/cart'); // or '/checkout'
   }, [inStock, maxAddable, quantity, router, setCart, product, stock]);
 
-  if (!product) return null;
+  if (!product) {
+    return(
+      <div className="min-h-screen flex flex-col items-center justify-center text-center px-6">
+        <h1 className="text-3xl font-bold text-slate-800 mb-4">Product not found</h1>
+        <p className="text-slate-600">We couldn't find the product you're looking for.</p>
+      </div> 
+    )
+  }
 
   return (
     <div className="grid lg:grid-cols-2 gap-12 mb-16">
