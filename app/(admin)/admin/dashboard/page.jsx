@@ -7,15 +7,12 @@ import CategoryDistribution from '@/app/component/admin-comps/CategoryDistributi
 import TopProducts from '@/app/component/admin-comps/TopProducts';
 import ActiveCustomers from '@/app/component/admin-comps/ActiveCustomer';
 import GrowthCard from '@/app/component/admin-comps/GrowthCard';
-import AdminSidebar from '@/app/component/admin-comps/AdminSidebar';
 export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white">
-      <div className="">
-        <AdminSidebar />
-      </div>
+      
       {/* Use CSS variable for desktop padding; falls back to 16rem */}
-      <main className="flex-1 admin-main transition-[padding] duration-300">
+      <main className="flex-1 transition ease-in-out duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           <StatCards />
 

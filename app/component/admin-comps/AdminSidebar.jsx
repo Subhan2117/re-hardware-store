@@ -2,45 +2,81 @@
 
 import { useEffect, useState } from 'react';
 import {
-  LayoutDashboard, Package, ShoppingCart, FolderTree, BarChart3, Settings,
-  X, Bookmark, Menu,
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  FolderTree,
+  BarChart3,
+  Settings,
+  X,
+  Bookmark,
+  Menu,
 } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 const SIDEBAR_ITEMS = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'products',  label: 'Products',  icon: Package         },
-  { id: 'orders',    label: 'Orders',    icon: ShoppingCart    },
-  { id: 'categories',label: 'Categories',icon: FolderTree      },
-  { id: 'analytics', label: 'Analytics', icon: BarChart3       },
-  { id: 'settings',  label: 'Settings',  icon: Settings        },
+  {
+    id: 'dashboard',
+    label: 'Dashboard',
+    icon: LayoutDashboard,
+    href: '/admin/dashboard',
+  },
+  { id: 'products', label: 'Products', icon: Package, href: '/admin/products' },
+  { id: 'orders', label: 'Orders', icon: ShoppingCart, href: '/admin/orders' },
+  {
+    id: 'categories',
+    label: 'Categories',
+    icon: FolderTree,
+    href: '/admin/categories',
+  },
+
+  {
+    id: 'settings',
+    label: 'Settings',
+    icon: Settings,
+    href: '/admin/settings',
+  },
 ];
 
 export default function AdminSidebar() {
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [isOpen, setIsOpen] = useState(false);       // mobile drawer
+  const pathname = usePathname();
+
+  const [isOpen, setIsOpen] = useState(false); // mobile drawer
   const [collapsed, setCollapsed] = useState(false); // desktop slim
 
-  // Restore collapsed state, then set CSS var
   useEffect(() => {
     const saved = localStorage.getItem('adminSidebarCollapsed');
     const isCollapsed = saved === '1';
     setCollapsed(isCollapsed);
-    document.documentElement.style.setProperty('--sidebar-width', isCollapsed ? '5rem' : '16rem');
+    document.documentElement.style.setProperty(
+      '--sidebar-width',
+      isCollapsed ? '5rem' : '16rem'
+    );
   }, []);
 
-  // Persist and update CSS var on change
   useEffect(() => {
     localStorage.setItem('adminSidebarCollapsed', collapsed ? '1' : '0');
-    document.documentElement.style.setProperty('--sidebar-width', collapsed ? '5rem' : '16rem');
+    document.documentElement.style.setProperty(
+      '--sidebar-width',
+      collapsed ? '5rem' : '16rem'
+    );
   }, [collapsed]);
 
-  // Prevent body scroll when mobile drawer is open
   useEffect(() => {
     document.body.style.overflow = isOpen ? 'hidden' : '';
-    return () => { document.body.style.overflow = ''; };
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, [isOpen]);
 
   const desktopWidth = collapsed ? 'w-20' : 'w-64';
+
+  // Consider "/admin" as dashboard
+  const normalizedPath = pathname === '/admin' ? '/admin/dashboard' : pathname;
+
+  const isActive = (href) =>
+    normalizedPath === href || normalizedPath.startsWith(href + '/');
 
   return (
     <>
@@ -112,23 +148,31 @@ export default function AdminSidebar() {
 
         {/* Nav */}
         <nav className="p-3 space-y-1">
-          {SIDEBAR_ITEMS.map(({ id, label, icon: Icon }) => {
-            const active = activeTab === id;
+          {SIDEBAR_ITEMS.map(({ id, label, icon: Icon, href }) => {
+            const active = isActive(href);
             return (
-              <button
+              <Link
                 key={id}
-                onClick={() => setActiveTab(id)}
+                href={href}
+                onClick={() => setIsOpen(false)} // close mobile drawer on navigate
+                aria-current={active ? 'page' : undefined}
                 className={`
-                  w-full flex items-center ${collapsed ? 'justify-center' : 'justify-start'}
+                  w-full flex items-center ${
+                    collapsed ? 'justify-center' : 'justify-start'
+                  }
                   gap-3 px-3 py-2 rounded-lg transition-all
-                  ${active
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
-                    : 'text-gray-700 hover:bg-orange-50'}
+                  ${
+                    active
+                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-md'
+                      : 'text-gray-700 hover:bg-orange-50'
+                  }
                 `}
               >
                 <Icon className="w-5 h-5 shrink-0" />
-                {!collapsed && <span className="font-medium truncate">{label}</span>}
-              </button>
+                {!collapsed && (
+                  <span className="font-medium truncate">{label}</span>
+                )}
+              </Link>
             );
           })}
         </nav>
