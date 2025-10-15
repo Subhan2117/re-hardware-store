@@ -29,7 +29,7 @@ export default async function page(props) {
           <div>
             <ProductDetailsClient productId={id} />
 
-            <ProductTabs productId={id} mockReviews={mockReviews} />
+            <ProductTabs productId={id} />
           </div>
         </div>
       </div>

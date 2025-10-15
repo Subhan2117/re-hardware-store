@@ -1,4 +1,4 @@
-import { mockProducts } from "./mockProducts"
+// import { mockProducts } from "./mockProducts"
 
 export const mockOrders = [
   {
