@@ -1,9 +1,11 @@
 'use client';
 import { useState } from 'react';
 import { Check, Star } from 'lucide-react';
+import WriteReview from "./WriteReview";
 
 export default function ProductTabs({ product, mockReviews }) {
   const [activeTab, setActiveTab] = useState('features');
+  const [showReview, setShowReview] = useState(false);
 
   return (
     <div className="backdrop-blur-lg border border-slate-200/30 bg-white/70 rounded-3xl p-8 mt-12">
@@ -64,9 +66,12 @@ export default function ProductTabs({ product, mockReviews }) {
         <div className="space-y-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-bold text-slate-800">Customer Reviews</h3>
-            <button className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-2xl px-4 py-2 text-sm font-medium">
-              Write a Review
-            </button>
+            <button
+              onClick={() => setShowReview(true)}
+              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600"
+            >Write a Review</button>
+
+            {showReview && <WriteReview onClose={() => setShowReview(false)} />}
           </div>
 
           <div className="space-y-6">
