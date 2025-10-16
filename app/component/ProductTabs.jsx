@@ -1,11 +1,56 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Check, Star } from 'lucide-react';
-import WriteReview from "./WriteReview";
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/api/firebase/firebase';
+import WriteReview from './WriteReview';
 
-export default function ProductTabs({ product, mockReviews }) {
+
+export default function ProductTabs({ productId }) {
   const [activeTab, setActiveTab] = useState('features');
+  const [product, setProduct] = useState(null);
+  const [reviews, setReviews] = useState([]);
   const [showReview, setShowReview] = useState(false);
+
+  useEffect(() => {
+      if (!productId) return;
+  
+      const fetchProduct = async () => {
+        try {
+          const docRef = doc(db, 'products', productId);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setProduct({ id: docSnap.id, ...docSnap.data() });
+          } else {
+            setProduct(null);
+          }
+        } catch (error) {
+          console.error('Error fetching product:', error);
+        }
+      };
+  
+      fetchProduct();
+    }, [productId]);
+
+  useEffect(() => {
+    if (!productId) return;
+
+    const fetchReviews = async () => {
+      try {
+        const reviewsRef = collection(db, 'reviews');
+        const q = query(reviewsRef, where('productId', '==', productId));
+        const querySnapshot = await getDocs(q);
+        const fetchedReviews = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setReviews(fetchedReviews);
+      } catch (error) {
+        console.error("Error fetching reviews:", error);
+      }
+    };
+
+    fetchReviews();
+  }, [productId]);
+  
+  if (!product) return <p className="text-slate-600">Couldn't load tabs, product not found.</p>;
 
   return (
     <div className="backdrop-blur-lg border border-slate-200/30 bg-white/70 rounded-3xl p-8 mt-12">
@@ -68,47 +113,52 @@ export default function ProductTabs({ product, mockReviews }) {
             <h3 className="text-2xl font-bold text-slate-800">Customer Reviews</h3>
             <button
               onClick={() => setShowReview(true)}
-              className="bg-orange-500 text-white px-4 py-2 rounded-lg hover:bg-orange-600"
-            >Write a Review</button>
-
+              className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-2xl px-4 py-2 text-sm font-medium"
+            >
+              Write a Review
+            </button>
             {showReview && <WriteReview onClose={() => setShowReview(false)} />}
           </div>
 
           <div className="space-y-6">
-            {mockReviews?.map((review) => (
-              <div
-                key={review.id}
-                className="p-6 bg-slate-50/50 border border-slate-200/30 rounded-2xl"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="font-bold text-slate-800">{review.author}</span>
-                      {review.verified && (
-                        <span className="bg-green-100 text-green-700 border border-green-200 text-xs px-2 py-1 rounded-lg">
-                          Verified Purchase
-                        </span>
-                      )}
+            {reviews.length > 0 ? (
+              reviews.map((review) => (
+                <div
+                  key={review.id}
+                  className="p-6 bg-slate-50/50 border border-slate-200/30 rounded-2xl"
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="font-bold text-slate-800">{review.author}</span>
+                        {review.verified && (
+                          <span className="bg-green-100 text-green-700 border border-green-200 text-xs px-2 py-1 rounded-lg">
+                            Verified Purchase
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${
+                              i < review.rating
+                                ? 'fill-amber-500 text-amber-500'
+                                : 'text-slate-300'
+                            }`}
+                          />
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${
-                            i < review.rating
-                              ? 'fill-amber-500 text-amber-500'
-                              : 'text-slate-300'
-                          }`}
-                        />
-                      ))}
-                    </div>
+                    <span className="text-sm text-slate-500">{review.date}</span>
                   </div>
-                  <span className="text-sm text-slate-500">{review.date}</span>
+                  <h4 className="font-bold text-slate-800 mb-2">{review.title}</h4>
+                  <p className="text-slate-600 leading-relaxed">{review.comment}</p>
                 </div>
-                <h4 className="font-bold text-slate-800 mb-2">{review.title}</h4>
-                <p className="text-slate-600 leading-relaxed">{review.comment}</p>
-              </div>
-            ))}
+              ))
+            ) : (
+              <p className="text-slate-600">No reviews yet for this product.</p>
+            )}
           </div>
         </div>
       )}
