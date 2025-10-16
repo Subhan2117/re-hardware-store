@@ -1,3 +1,5 @@
-export default function page(){
-    return <div>categories</div>
+import CategoriesClient from './CategoriesClient';
+
+export default function Page() {
+  return <CategoriesClient />;
 }
