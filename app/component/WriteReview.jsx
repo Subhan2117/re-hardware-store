@@ -1,6 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import { Star } from "lucide-react";
+import { db } from "../../api/firebase/firebase";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
 
 export default function WriteReview({ onClose }) {
   const [name, setName] = useState("");
@@ -8,9 +10,18 @@ export default function WriteReview({ onClose }) {
   const [hover, setHover] = useState(null);
   const [review, setReview] = useState("");
 
-  const handleSubmit = () => {
-    // you can later hook this to Firestore or backend
-    console.log({ name, rating, review });
+  const handleSubmit = async () => {
+    try {
+      await addDoc(collection(db, "reviews"), {
+        name,
+        rating,
+        review,
+        createdAt: Timestamp.now(),
+        // Add productId if available as a prop
+      });
+    } catch (error) {
+      console.error("Error adding review:", error);
+    }
     onClose(); // closes modal after publishing
   };
 
