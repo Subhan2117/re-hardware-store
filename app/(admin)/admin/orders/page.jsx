@@ -38,7 +38,7 @@ export default function Page() {
       </div>
         </div>
       {/* Orders Table (static, no interactivity) */}
-        <div className="overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm">
         <table className="w-full text-left">
           <thead className="bg-gray-100 border-b">
             <tr>
@@ -63,7 +63,19 @@ export default function Page() {
             </tr>
 
             <tr className="border-b hover:bg-gray-50">
-              <td className="px-6 py-4 font-medium text-gray-900">ORD-1002</td>
+              <td className="px-6 py-4 font-medium text-gray-900">ORDER #</td>
+              <td className="px-6 py-4 text-gray-700">customer 2</td>
+              <td className="px-6 py-4 text-gray-700">2025-10-19</td>
+              <td className="px-6 py-4 text-gray-700">$149.50</td>
+              <td className="px-6 py-4">
+                <span className="inline-flex items-center rounded-full bg-yellow-100 px-3 py-1 text-xs font-medium text-yellow-800">
+                  Processing
+                </span>
+              </td>
+            </tr>
+
+            <tr className="border-b hover:bg-gray-50">
+              <td className="px-6 py-4 font-medium text-gray-900">ORDER #</td>
               <td className="px-6 py-4 text-gray-700">customer 2</td>
               <td className="px-6 py-4 text-gray-700">2025-10-19</td>
               <td className="px-6 py-4 text-gray-700">$149.50</td>
@@ -76,6 +88,7 @@ export default function Page() {
           </tbody>
         </table>
       </div>
+
       
 
 
