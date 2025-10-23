@@ -6,6 +6,7 @@ import {
   Wrench, Hammer, Plug, ShowerHead, Lightbulb, Paintbrush,
   Thermometer, Cog, Lock, Ruler, Scissors, Zap, Search
 } from 'lucide-react';
+import NewCategoryModal from '@/app/component/admin-comps/NewCategory';
 import { useRouter } from 'next/navigation';
 
 // optional icons map for each category
@@ -25,10 +26,12 @@ const categoryIcons = {
   'Generators': <Zap className="h-5 w-5" />,
 };
 
+
 // OUR MAIN CATEGORIES PAGE (client component)
 export default function CategoriesClient() {
   const [products, setProducts] = useState([]);
   const [query, setQuery] = useState('');
+  const [showNewCat, setShowNewCat] = useState(false);
   const router = useRouter();
 
   // Fetch all products
@@ -91,7 +94,7 @@ export default function CategoriesClient() {
 
           <button
             className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-sm transition"
-            onClick={() => alert('This is just a static demo button!')}
+            onClick={() => setShowNewCat(true)}
           >
             + Add Category
           </button>
@@ -127,6 +130,9 @@ export default function CategoriesClient() {
           <div className="mt-20 text-center text-gray-500">
             No categories match “{query}”.
           </div>
+        )}
+        {showNewCat && (
+          <NewCategoryModal onClose={() => setShowNewCat(false)} />
         )}
       </div>
     </div>
