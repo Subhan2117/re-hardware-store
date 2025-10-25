@@ -17,6 +17,11 @@ const ordersSnapshot = await getAggregateFromServer(ordersRef, {
   countAlias: count(),
 });
 
+const categoryRef = collection(db, "categories");
+const categorySnap = await getAggregateFromServer(categoryRef, {
+  countAlias: count(),
+});
+
 
 function StatCard({ title, value, icon: Icon, accentClass, subtext }) {
   return (
@@ -67,7 +72,7 @@ export default function StatCards({ stats = DEFAULT_STATS }) {
       />
       <StatCard
         title="Categories"
-        value={stats.categories}
+        value={categorySnap.data().countAlias}
         icon={FolderTree}
         accentClass="bg-gradient-to-br from-green-400 to-green-600"
         subtext={<><span className="font-semibold text-gray-700">Active</span><span className="text-gray-500 ml-1">categories</span></>}
