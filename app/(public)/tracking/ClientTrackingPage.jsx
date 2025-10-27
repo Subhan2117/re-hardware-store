@@ -1,15 +1,37 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
-import { mockProducts } from '@/app/mock-data/mockProducts';
 import { mockOrders } from '@/app/mock-data/mockOrders';
+import { db } from '@/api/firebase/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+
 
 export default function ClientTrackingPage() {
   const [trackingNumber, setTrackingNumber] = useState('');
   const [searchedOrder, setSearchedOrder] = useState(null);
   const [isSearching, setIsSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
+  const [products, setProducts] = useState([]);
+
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, 'products'));
+        const productList = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setProducts(productList);
+      } catch (error) {
+        console.error('Error fetching products:', error)
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -28,10 +50,17 @@ export default function ClientTrackingPage() {
     if (!order) {
       setNotFound(true);
       setSearchedOrder(null);
-    } else {
-      const product = mockProducts.find((p) => p.id === order.productId);
-      setSearchedOrder({ ...order, ...product });
     }
+    else{
+      const product = products.find((p) => p.id === order.productId);
+      if (!product) {
+        setNotFound(true);
+      } else {
+        setSearchedOrder({ ...order, ...product });
+      }
+    }
+
+
 
     setIsSearching(false);
   };
