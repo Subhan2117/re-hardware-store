@@ -3,8 +3,19 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { db } from '@/api/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import {
-  Wrench, Hammer, Plug, ShowerHead, Lightbulb, Paintbrush,
-  Thermometer, Cog, Lock, Ruler, Scissors, Zap, Search
+  Wrench,
+  Hammer,
+  Plug,
+  ShowerHead,
+  Lightbulb,
+  Paintbrush,
+  Thermometer,
+  Cog,
+  Lock,
+  Ruler,
+  Scissors,
+  Zap,
+  Search,
 } from 'lucide-react';
 import NewCategoryModal from '@/app/component/admin-comps/NewCategory';
 import { useRouter } from 'next/navigation';
@@ -13,19 +24,19 @@ import { useRouter } from 'next/navigation';
 const categoryIcons = {
   'Power Tools': <Wrench className="h-5 w-5" />,
   'Hand Tools': <Hammer className="h-5 w-5" />,
-  'Electrical': <Plug className="h-5 w-5" />,
-  'Plumbing': <ShowerHead className="h-5 w-5" />,
-  'Lighting': <Lightbulb className="h-5 w-5" />,
+  Electrical: <Plug className="h-5 w-5" />,
+  Plumbing: <ShowerHead className="h-5 w-5" />,
+  Lighting: <Lightbulb className="h-5 w-5" />,
   'Paint & Supplies': <Paintbrush className="h-5 w-5" />,
-  'HVAC': <Thermometer className="h-5 w-5" />,
-  'Hardware': <Cog className="h-5 w-5" />,
-  'Security': <Lock className="h-5 w-5" />,
+  HVAC: <Thermometer className="h-5 w-5" />,
+  Hardware: <Cog className="h-5 w-5" />,
+  Security: <Lock className="h-5 w-5" />,
   'Measuring Tools': <Ruler className="h-5 w-5" />,
   'Cutting Tools': <Scissors className="h-5 w-5" />,
-  'Generators': <Zap className="h-5 w-5" />,
+  Generators: <Zap className="h-5 w-5" />,
 };
 
-// MAIN PAGE
+// OUR MAIN CATEGORIES PAGE (client component)
 export default function CategoriesClient() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -85,7 +96,9 @@ export default function CategoriesClient() {
         {/* Header */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Appliance Categories</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              Appliance Categories
+            </h1>
             <p className="mt-1 text-sm text-gray-500">
               Browse and manage all hardware store appliance categories
             </p>
@@ -112,7 +125,7 @@ export default function CategoriesClient() {
 
         {/* Grid */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filtered.map(cat => (
+          {filtered.map((cat) => (
             <div
               key={cat.id}
               onClick={() => router.push(`/catalog?category=${encodeURIComponent(cat.name)}`)}
@@ -124,7 +137,9 @@ export default function CategoriesClient() {
                     {cat.icon}
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold tracking-tight">{cat.name}</h3>
+                    <h3 className="text-lg font-semibold tracking-tight">
+                      {cat.name}
+                    </h3>
                     <p className="text-sm text-gray-500">{cat.count} items</p>
                   </div>
                 </div>
