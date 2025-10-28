@@ -3,11 +3,14 @@ import { useState, useEffect } from 'react';
 import { Check, Star } from 'lucide-react';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/api/firebase/firebase';
+import WriteReview from './WriteReview';
+
 
 export default function ProductTabs({ productId }) {
   const [activeTab, setActiveTab] = useState('features');
   const [product, setProduct] = useState(null);
   const [reviews, setReviews] = useState([]);
+  const [showReview, setShowReview] = useState(false);
 
   useEffect(() => {
       if (!productId) return;
@@ -108,9 +111,13 @@ export default function ProductTabs({ productId }) {
         <div className="space-y-6">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-2xl font-bold text-slate-800">Customer Reviews</h3>
-            <button className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-2xl px-4 py-2 text-sm font-medium">
+            <button
+              onClick={() => setShowReview(true)}
+              className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-2xl px-4 py-2 text-sm font-medium"
+            >
               Write a Review
             </button>
+            {showReview && <WriteReview onClose={() => setShowReview(false)} />}
           </div>
 
           <div className="space-y-6">
