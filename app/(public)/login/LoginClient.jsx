@@ -66,20 +66,32 @@ export default function LoginClient() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
-        {/* User/Admin Toggle */}
-        <div className="flex items-center justify-center gap-3 mb-4">
-          <span className="text-sm font-medium text-gray-700">User</span>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              className="sr-only peer"
-              checked={isAdmin}
-              onChange={() => setIsAdmin(!isAdmin)}
-            />
-            <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-amber-500 transition"></div>
-            <span className="absolute left-1 top-0.5 bg-white w-5 h-5 rounded-full shadow-md peer-checked:translate-x-5 transition"></span>
-          </label>
-          <span className="text-sm font-medium text-gray-700">Admin</span>
+        {/* User/Admin Toggle (Two-button style) */}
+        <div className="flex justify-center mb-4">
+          <div className="flex w-[220px] bg-gray-100 rounded-full p-1 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setIsAdmin(false)}
+              className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                !isAdmin
+                  ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-orange-600'
+              }`}
+            >
+              User
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAdmin(true)}
+              className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                isAdmin
+                  ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-orange-600'
+              }`}
+            >
+              Admin
+            </button>
+          </div>
         </div>
 
         {/* Email */}
