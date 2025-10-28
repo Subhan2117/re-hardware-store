@@ -1,11 +1,10 @@
-"use client";
-import React, { useState } from "react";
+'use client';
+import React, { useState } from 'react';
 
 export default function NewCategoryModal({ onClose }) {
-  const [categoryName, setCategoryName] = useState("");
+  const [categoryName, setCategoryName] = useState('');
 
   const handleSubmit = () => {
-
     console.log({ categoryName }); // later hook this to backend or Firestore
     onClose();
   };
@@ -31,26 +30,20 @@ export default function NewCategoryModal({ onClose }) {
 
           {/* CANCEL OR SUBMIT */}
           <div className="flex justify-end gap-2">
-
-
-
-
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
-            >Cancel</button>
-
-
+            >
+              Cancel
+            </button>
 
             <button
               type="submit"
               className="px-4 py-2 rounded-lg bg-orange-500 text-white hover:bg-orange-600"
-            >Submit</button>
-
-
-
-
+            >
+              Submit
+            </button>
           </div>
         </form>
       </div>

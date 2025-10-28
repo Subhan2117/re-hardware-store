@@ -9,7 +9,10 @@ import {
   getDocs,
   orderBy,
   query as fsQuery,
+  serverTimestamp,
+  addDoc,
 } from 'firebase/firestore';
+import Link from 'next/link';
 
 // tiny debounce hook (200ms by default)
 function useDebounce(value, delay = 200) {
@@ -25,6 +28,7 @@ export default function Page() {
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [stockFilter, setStockFilter] = useState('all');
+  const [showNewProduct, setShowNewProduct] = useState(false);
 
   // use the debounced value for any filtering/fetch
   const debouncedQuery = useDebounce(searchQuery, 200);
@@ -43,7 +47,7 @@ export default function Page() {
         const rows = snap.docs.map((d) => {
           const data = d.data() || {};
           const label = data.name ?? d.id; // shown in dropdown
-          const value = (data.name ?? d.id).trim() // <-- this matches product.category ("power-tools")
+          const value = (data.name ?? d.id).trim(); // <-- this matches product.category ("power-tools")
           return { label, value };
         });
 
@@ -59,6 +63,20 @@ export default function Page() {
       alive = false;
     };
   }, []);
+  async function handleCreateProduct(payload) {
+    // sanitize/coerce
+    const docData = {
+      name: payload.name.trim(),
+      price: Number(payload.price),
+      stock: Number(payload.stock),
+      category: payload.category, // matches dropdown value
+      image: payload.image || '',
+      description: payload.description || '',
+      createdAt: serverTimestamp?.() ?? new Date(),
+    };
+    await addDoc(collection(db, 'products'), docData);
+    setShowNewProduct(false);
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white">
@@ -73,10 +91,14 @@ export default function Page() {
                 Manage your product inventory
               </p>
             </div>
-            <button className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg flex items-center px-2 py-1 rounded-xl">
+            <Link
+            href={'/admin/products/new'}
+              className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg flex items-center px-2 py-1 rounded-xl"
+              onClick={() => setShowNewProduct(true)}
+            >
               <Plus className="w-4 h-4 mr-2" />
               Add Product
-            </button>
+            </Link>
           </div>
 
           {/* Stats Cards */}
