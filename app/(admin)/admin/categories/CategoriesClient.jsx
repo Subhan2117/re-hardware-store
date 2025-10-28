@@ -143,9 +143,6 @@ export default function CategoriesClient() {
                     <p className="text-sm text-gray-500">{cat.count} items</p>
                   </div>
                 </div>
-                <div className="mt-4 text-amber-600 font-medium group-hover:underline">
-                  View All →
-                </div>
               </div>
             </div>
           ))}
