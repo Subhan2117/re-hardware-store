@@ -16,7 +16,7 @@ export default function OrdersPage() {
       try {
         // Fetch products
         const productSnapshot = await getDocs(collection(db, 'products'));
-        const productList = productSnapshot.docs.map(doc => ({
+        const productList = productSnapshot.docs.map((doc) => ({
           id: doc.id,
           name: doc.data().name,
         }));
@@ -24,16 +24,16 @@ export default function OrdersPage() {
 
         // Fetch orders
         const orderSnapshot = await getDocs(collection(db, 'orders'));
-        const ordersList = orderSnapshot.docs.map(doc => ({
+        const ordersList = orderSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
 
         // Map product IDs to names
-        const ordersWithNames = ordersList.map(order => ({
+        const ordersWithNames = ordersList.map((order) => ({
           ...order,
-          products: order.products.map(p => {
-            const product = productList.find(prod => prod.id === p.productId);
+          products: order.products.map((p) => {
+            const product = productList.find((prod) => prod.id === p.productId);
             return {
               ...p,
               name: product ? product.name : `Unknown (${p.productId})`,
@@ -56,13 +56,22 @@ export default function OrdersPage() {
     let filtered = orders;
 
     // Filter buttons
-    if (filter === 'priority') filtered = filtered.filter(o => o.status === 'In Transit');
-    if (filter === 'recent') filtered = [...filtered].sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
+    if (filter === 'priority')
+      filtered = filtered.filter((o) => o.status === 'In Transit');
+    if (filter === 'recent')
+      filtered = [...filtered].sort(
+        (a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate)
+      );
 
     // Search bar
     if (searchTerm.trim() !== '') {
-      filtered = filtered.filter(order => {
-        const text = order.trackingNumber + ' ' + order.status + ' ' + order.products.map(p => p.name).join(' ');
+      filtered = filtered.filter((order) => {
+        const text =
+          order.trackingNumber +
+          ' ' +
+          order.status +
+          ' ' +
+          order.products.map((p) => p.name).join(' ');
         return text.toLowerCase().includes(searchTerm.toLowerCase());
       });
     }
@@ -86,7 +95,7 @@ export default function OrdersPage() {
             className="w-full px-4 py-2 border rounded-lg"
             placeholder="Search by tracking number, status, or product"
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
@@ -154,11 +163,15 @@ export default function OrdersPage() {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map(order => (
+                filteredOrders.map((order) => (
                   <tr key={order.id} className="border-b hover:bg-gray-50">
                     <td className="px-6 py-4">{order.trackingNumber}</td>
-                    <td className="px-6 py-4">{order.products.map(p => p.name).join(', ')}</td>
-                    <td className="px-6 py-4">{order.products.map(p => p.quantity).join(', ')}</td>
+                    <td className="px-6 py-4">
+                      {order.products.map((p) => p.name).join(', ')}
+                    </td>
+                    <td className="px-6 py-4">
+                      {order.products.map((p) => p.quantity).join(', ')}
+                    </td>
                     <td className="px-6 py-4">{order.status}</td>
                     <td className="px-6 py-4">{order.estimatedDelivery}</td>
                     <td className="px-6 py-4">{order.lastUpdate}</td>
