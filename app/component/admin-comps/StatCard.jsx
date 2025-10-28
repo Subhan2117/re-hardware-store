@@ -1,9 +1,27 @@
 'use client';
 
 import { DollarSign, ArrowUpRight, ShoppingCart, Package, FolderTree } from 'lucide-react';
+import { db } from '@/api/firebase/firebase';
+import { collection, count, getAggregateFromServer } from 'firebase/firestore';
 
 
 const DEFAULT_STATS = { revenue: 42350, orders: 1234, products: 249, categories: 12 };
+
+const productsRef = collection(db, "products");
+const productsSnapshot = await getAggregateFromServer(productsRef, {
+  countAlias: count(),
+});
+
+const ordersRef = collection(db, "orders");
+const ordersSnapshot = await getAggregateFromServer(ordersRef, {
+  countAlias: count(),
+});
+
+const categoryRef = collection(db, "categories");
+const categorySnap = await getAggregateFromServer(categoryRef, {
+  countAlias: count(),
+});
+
 
 function StatCard({ title, value, icon: Icon, accentClass, subtext }) {
   return (
@@ -40,21 +58,21 @@ export default function StatCards({ stats = DEFAULT_STATS }) {
       />
       <StatCard
         title="Total Orders"
-        value={stats.orders.toLocaleString()}
+        value={ordersSnapshot.data().countAlias}
         icon={ShoppingCart}
         accentClass="bg-gradient-to-br from-blue-400 to-blue-600"
         subtext={<><span className="font-semibold">+8.2%</span><span className="text-gray-500 ml-1">vs last month</span></>}
       />
       <StatCard
         title="Total Products"
-        value={stats.products}
+        value={productsSnapshot.data().countAlias}
         icon={Package}
         accentClass="bg-gradient-to-br from-purple-400 to-purple-600"
         subtext={<><span className="font-semibold">+3.1%</span><span className="text-gray-500 ml-1">vs last month</span></>}
       />
       <StatCard
         title="Categories"
-        value={stats.categories}
+        value={categorySnap.data().countAlias}
         icon={FolderTree}
         accentClass="bg-gradient-to-br from-green-400 to-green-600"
         subtext={<><span className="font-semibold text-gray-700">Active</span><span className="text-gray-500 ml-1">categories</span></>}
