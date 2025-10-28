@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Eye, EyeOff, Lock, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import useLogin from '@/app/hooks/useLogin.jsx';
 
 export default function LoginClient() {
@@ -15,6 +16,17 @@ export default function LoginClient() {
     onEmailSubmit,
     onGoogleSignIn,
   } = useLogin();
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminKey, setAdminKey] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (isAdmin) {
+      console.log('Admin login with key:', adminKey);
+    }
+    onEmailSubmit(e);
+  };
 
   return (
     <div>
@@ -53,7 +65,23 @@ export default function LoginClient() {
         </div>
       )}
 
-      <form onSubmit={onEmailSubmit} className="space-y-6 max-w-md mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
+        {/* User/Admin Toggle */}
+        <div className="flex items-center justify-center gap-3 mb-4">
+          <span className="text-sm font-medium text-gray-700">User</span>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              className="sr-only peer"
+              checked={isAdmin}
+              onChange={() => setIsAdmin(!isAdmin)}
+            />
+            <div className="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:bg-amber-500 transition"></div>
+            <span className="absolute left-1 top-0.5 bg-white w-5 h-5 rounded-full shadow-md peer-checked:translate-x-5 transition"></span>
+          </label>
+          <span className="text-sm font-medium text-gray-700">Admin</span>
+        </div>
+
         {/* Email */}
         <div className="flex flex-col">
           <label htmlFor="email" className="mb-2 text-sm font-semibold text-slate-700">
@@ -103,6 +131,24 @@ export default function LoginClient() {
           </div>
         </div>
 
+        {/* Admin Key */}
+        {isAdmin && (
+          <div className="flex flex-col">
+            <label htmlFor="adminKey" className="mb-2 text-sm font-semibold text-slate-700">
+              Admin Key
+            </label>
+            <input
+              id="adminKey"
+              type="text"
+              placeholder="Enter Admin Key"
+              value={adminKey}
+              onChange={(e) => setAdminKey(e.target.value)}
+              className="w-full px-4 py-3 border border-red-200 rounded-xl text-base text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
+              required
+            />
+          </div>
+        )}
+
         {/* Extras */}
         <div className="flex items-center justify-between">
           <label className="flex items-center">
@@ -138,7 +184,7 @@ export default function LoginClient() {
                 Signing in…
               </span>
             ) : (
-              'Sign In'
+              isAdmin ? 'Sign In as Admin' : 'Sign In'
             )}
           </button>
         </div>
