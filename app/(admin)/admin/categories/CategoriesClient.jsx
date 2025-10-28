@@ -119,10 +119,6 @@ export default function CategoriesClient() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((cat) => (
             <div
-              key={cat.name}
-              onClick={() =>
-                router.push(`/catalog?category=${encodeURIComponent(cat.name)}`)
-              }
               className="cursor-pointer group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
             >
               <div className="p-5">
@@ -136,9 +132,6 @@ export default function CategoriesClient() {
                     </h3>
                     <p className="text-sm text-gray-500">{cat.count} items</p>
                   </div>
-                </div>
-                <div className="mt-4 text-amber-600 font-medium group-hover:underline">
-                  View All →
                 </div>
               </div>
             </div>
