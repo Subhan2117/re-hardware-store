@@ -1,5 +1,8 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { MoreHorizontal } from 'lucide-react';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '@/api/firebase/firebase';
 
 const DEFAULT_ORDERS = [
   { id: '#ORD-001', customer: 'John Doe', product: 'Cordless Drill', amount: 99.99, status: 'completed' },
@@ -17,7 +20,34 @@ function badgeClasses(status) {
   return 'bg-gray-100 text-gray-700';
 }
 
-export default function RecentOrders({ orders = DEFAULT_ORDERS }) {
+export default function RecentOrders({ orders: initialOrders = null }) {
+  const [orders, setOrders] = useState(initialOrders || DEFAULT_ORDERS);
+
+  useEffect(() => {
+    if (initialOrders) return; // parent provided orders
+
+    const fetchOrders = async () => {
+      try {
+        const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        const fetched = snap.docs.slice(0, 5).map((doc) => {
+          const data = doc.data();
+          return {
+            id: data.orderNumber || `#${doc.id.slice(0, 6)}`,
+            customer: data.customerName || data.customer?.name || 'Customer',
+            amount: data.total || data.amount || 0,
+            status: data.status || 'processing',
+          };
+        });
+        if (fetched.length) setOrders(fetched);
+      } catch (err) {
+        console.error('Error fetching recent orders', err);
+      }
+    };
+
+    fetchOrders();
+  }, [initialOrders]);
+
   return (
     <div className="bg-white border border-orange-100 rounded-xl shadow-lg">
       <div className="p-5 border-b border-orange-100 flex items-center justify-between">
