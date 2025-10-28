@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Eye, EyeOff, Lock, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import useLogin from '@/app/hooks/useLogin.jsx';
 
 export default function LoginClient() {
@@ -15,6 +16,17 @@ export default function LoginClient() {
     onEmailSubmit,
     onGoogleSignIn,
   } = useLogin();
+
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminKey, setAdminKey] = useState('');
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (isAdmin) {
+      console.log('Admin login with key:', adminKey);
+    }
+    onEmailSubmit(e);
+  };
 
   return (
     <div>
@@ -53,7 +65,35 @@ export default function LoginClient() {
         </div>
       )}
 
-      <form onSubmit={onEmailSubmit} className="space-y-6 max-w-md mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
+        {/* User/Admin Toggle (Two-button style) */}
+        <div className="flex justify-center mb-4">
+          <div className="flex w-[220px] bg-gray-100 rounded-full p-1 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setIsAdmin(false)}
+              className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                !isAdmin
+                  ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-orange-600'
+              }`}
+            >
+              User
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAdmin(true)}
+              className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                isAdmin
+                  ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-orange-600'
+              }`}
+            >
+              Admin
+            </button>
+          </div>
+        </div>
+
         {/* Email */}
         <div className="flex flex-col">
           <label htmlFor="email" className="mb-2 text-sm font-semibold text-slate-700">
@@ -103,6 +143,24 @@ export default function LoginClient() {
           </div>
         </div>
 
+        {/* Admin Key */}
+        {isAdmin && (
+          <div className="flex flex-col">
+            <label htmlFor="adminKey" className="mb-2 text-sm font-semibold text-slate-700">
+              Admin Key
+            </label>
+            <input
+              id="adminKey"
+              type="text"
+              placeholder="Enter Admin Key"
+              value={adminKey}
+              onChange={(e) => setAdminKey(e.target.value)}
+              className="w-full px-4 py-3 border border-red-200 rounded-xl text-base text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
+              required
+            />
+          </div>
+        )}
+
         {/* Extras */}
         <div className="flex items-center justify-between">
           <label className="flex items-center">
@@ -138,7 +196,7 @@ export default function LoginClient() {
                 Signing in…
               </span>
             ) : (
-              'Sign In'
+              isAdmin ? 'Sign In as Admin' : 'Sign In'
             )}
           </button>
         </div>
