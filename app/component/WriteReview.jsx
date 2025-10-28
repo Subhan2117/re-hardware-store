@@ -1,16 +1,39 @@
 "use client";
 import React, { useState } from "react";
 import { Star } from "lucide-react";
+import { db } from "../../api/firebase/firebase";
+import { collection, addDoc, Timestamp } from "firebase/firestore";
 
-export default function WriteReview({ onClose }) {
+export default function WriteReview({ onClose, productId, onPublished }) {
   const [name, setName] = useState("");
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(null);
   const [review, setReview] = useState("");
+  const [title, setTitle] = useState("");
 
-  const handleSubmit = () => {
-    // you can later hook this to Firestore or backend
-    console.log({ name, rating, review });
+  const handleSubmit = async () => {
+    if (!productId) {
+      console.warn('No productId provided for review, aborting');
+      return;
+    }
+
+    try {
+      await addDoc(collection(db, "reviews"), {
+        author: name || 'Anonymous',
+        title: title || '',
+        comment: review || '',
+        rating: rating || 0,
+        productId,
+        verified: false,
+        createdAt: Timestamp.now(),
+      });
+
+      // notify parent to refresh reviews
+      if (typeof onPublished === 'function') onPublished();
+    } catch (error) {
+      console.error("Error adding review:", error);
+    }
+
     onClose(); // closes modal after publishing
   };
 

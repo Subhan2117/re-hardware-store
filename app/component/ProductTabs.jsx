@@ -32,21 +32,21 @@ export default function ProductTabs({ productId }) {
       fetchProduct();
     }, [productId]);
 
-  useEffect(() => {
+  // fetchReviews is exposed so children can trigger a refresh after publishing
+  const fetchReviews = async () => {
     if (!productId) return;
+    try {
+      const reviewsRef = collection(db, 'reviews');
+      const q = query(reviewsRef, where('productId', '==', productId));
+      const querySnapshot = await getDocs(q);
+      const fetchedReviews = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setReviews(fetchedReviews);
+    } catch (error) {
+      console.error("Error fetching reviews:", error);
+    }
+  };
 
-    const fetchReviews = async () => {
-      try {
-        const reviewsRef = collection(db, 'reviews');
-        const q = query(reviewsRef, where('productId', '==', productId));
-        const querySnapshot = await getDocs(q);
-        const fetchedReviews = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setReviews(fetchedReviews);
-      } catch (error) {
-        console.error("Error fetching reviews:", error);
-      }
-    };
-
+  useEffect(() => {
     fetchReviews();
   }, [productId]);
   
@@ -117,7 +117,13 @@ export default function ProductTabs({ productId }) {
             >
               Write a Review
             </button>
-            {showReview && <WriteReview onClose={() => setShowReview(false)} />}
+            {showReview && (
+              <WriteReview
+                onClose={() => setShowReview(false)}
+                productId={productId}
+                onPublished={fetchReviews}
+              />
+            )}
           </div>
 
           <div className="space-y-6">
