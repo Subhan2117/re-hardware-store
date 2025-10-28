@@ -4,8 +4,8 @@ import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { mockOrders } from '@/app/mock-data/mockOrders';
 import { db } from '@/api/firebase/firebase';
-import { collection, getDocs } from 'firebase/firestore';
 
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
 export default function ClientTrackingPage() {
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -13,7 +13,6 @@ export default function ClientTrackingPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [products, setProducts] = useState([]);
-
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -25,13 +24,12 @@ export default function ClientTrackingPage() {
         }));
         setProducts(productList);
       } catch (error) {
-        console.error('Error fetching products:', error)
+        console.error('Error fetching products:', error);
       }
     };
 
     fetchProducts();
   }, []);
-
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -45,7 +43,8 @@ export default function ClientTrackingPage() {
       const ordersSnapshot = await getDocs(collection(db, 'orders'));
       const orderDoc = ordersSnapshot.docs.find(
         (d) =>
-          d.data().trackingNumber?.toLowerCase() === trackingNumber.toLowerCase()
+          d.data().trackingNumber?.toLowerCase() ===
+          trackingNumber.toLowerCase()
       );
 
       if (!orderDoc) {
@@ -55,7 +54,7 @@ export default function ClientTrackingPage() {
       }
       const orderData = orderDoc.data();
 
-      const productPromises = orderData.products.map(async (item) => {
+      const productPromises = (orderData.products ?? []).map(async (item) => {
         const productRef = doc(db, 'products', item.productId);
         const productSnap = await getDoc(productRef);
 
@@ -70,7 +69,9 @@ export default function ClientTrackingPage() {
         }
       });
 
-      const productsInOrder = (await Promise.all(productPromises)).filter(Boolean);
+      const productsInOrder = (await Promise.all(productPromises)).filter(
+        Boolean
+      );
 
       setSearchedOrder({
         ...orderData,
@@ -81,16 +82,6 @@ export default function ClientTrackingPage() {
       setNotFound(true);
       setSearchedOrder(null);
     }
-    else{
-      const product = products.find((p) => p.id === order.productId);
-      if (!product) {
-        setNotFound(true);
-      } else {
-        setSearchedOrder({ ...order, ...product });
-      }
-    }
-
-
 
     setIsSearching(false);
   };
