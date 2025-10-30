@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import { Search } from 'lucide-react';
 import { db } from '@/api/firebase/firebase';
-{/* Settings */}
+{/* Settingss */}
 export default function Page() {
   const [username, setUsername] = useState('');
   const [adminEmail, setAdminEmail] = useState('');
