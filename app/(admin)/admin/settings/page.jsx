@@ -1,82 +1,147 @@
-"use client"
+'use client';
 
-import React from "react"
-import { Mail, Lock, LogOut } from "lucide-react"
+import React, { useState } from 'react';
+import { Mail, Lock, LogOut } from 'lucide-react';
 
-export default function Page() {
-  const adminName = "John Admin"
-  const currentEmail = "admin@hardware.com"
+export default function AdminSettings() {
+  const [adminName] = useState('Admin name');
+  const [currentEmail, setCurrentEmail] = useState('admin@hardware.com');
+  const [newEmail, setNewEmail] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const handleChangeEmail = (e) => {
+    e.preventDefault();
+    if (newEmail.trim()) {
+      setCurrentEmail(newEmail);
+      setNewEmail('');
+      alert('Email updated successfully');
+    } else {
+      alert('Please enter a valid email.');
+    }
+  };
+
+  const handleChangePassword = (e) => {
+    e.preventDefault();
+    if (!newPassword || !confirmPassword) {
+      alert('Please fill out all password fields.');
+      return;
+    }
+    if (newPassword === confirmPassword) {
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      alert('Password updated successfully');
+    } else {
+      alert('Passwords do not match.');
+    }
+  };
+
+  const handleLogout = () => {
+    alert('Logging out...');
+    // Implement logout logic here
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white p-6">
-      <div className="mx-auto max-w-2xl">
+    <div className="min-h-screen bg-orange-50 p-8">
+      <div className="mx-auto max-w-3xl">
         {/* Header */}
-        <div className="mb-10">
-          <h1 className="text-4xl font-bold tracking-tight text-gray-900">Settings</h1>
-          <p className="mt-2 text-gray-500">Admin: {adminName}</p>
+        <div className="mb-12 text-center">
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Settings</h1>
+          <p className="text-gray-600 text-lg">
+            Logged in as: <span className="font-medium">{adminName}</span>
+          </p>
         </div>
 
-        {/* Settings Sections */}
-        <div className="space-y-6">
+        <div className="space-y-8">
           {/* Admin Info */}
-          <div className="rounded-2xl border bg-white shadow-sm p-6">
-            <h2 className="text-xl font-semibold mb-4">Admin Info</h2>
-            <div>
-              <p className="text-sm text-gray-500">Current Email</p>
-              <p className="font-medium">{currentEmail}</p>
-            </div>
-          </div>
+          <section className="bg-white shadow-md rounded-2xl p-8 border border-gray-200">
+            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Admin Info</h2>
+            <p className="text-gray-500">Current Email:</p>
+            <p className="font-medium text-gray-700">{currentEmail}</p>
+          </section>
 
-          {/* Change Email (Static Display) */}
-          <div className="rounded-2xl border bg-white shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Mail className="h-5 w-5 text-orange-500" />
-              <h2 className="text-xl font-semibold">Change Email</h2>
+          {/* Change Email */}
+          <section className="bg-white shadow-md rounded-2xl p-8 border border-gray-200">
+            <div className="flex items-center gap-3 mb-6">
+              <Mail className="h-6 w-6 text-orange-500" />
+              <h2 className="text-2xl font-semibold text-gray-800">Change Email</h2>
             </div>
-            <p className="text-gray-500">
-              New email: <span className="font-medium">example@hardware.com</span>
-            </p>
-            <button
-              disabled
-              className="mt-3 w-full px-4 py-2 bg-orange-300 text-white rounded-lg cursor-not-allowed font-medium"
-            >
-              Update Email
-            </button>
-          </div>
+            <form onSubmit={handleChangeEmail} className="space-y-4">
+              <input
+                type="email"
+                placeholder="Enter new email"
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium"
+              >
+                Update Email
+              </button>
+            </form>
+          </section>
 
-          {/* Change Password (Static Display) */}
-          <div className="rounded-2xl border bg-white shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Lock className="h-5 w-5 text-orange-500" />
-              <h2 className="text-xl font-semibold">Change Password</h2>
+          {/* Change Password */}
+          <section className="bg-white shadow-md rounded-2xl p-8 border border-gray-200">
+            <div className="flex items-center gap-3 mb-6">
+              <Lock className="h-6 w-6 text-orange-500" />
+              <h2 className="text-2xl font-semibold text-gray-800">Change Password</h2>
             </div>
-            <p className="text-gray-500 mb-3">New password: ••••••••</p>
-            <button
-              disabled
-              className="w-full px-4 py-2 bg-orange-300 text-white rounded-lg cursor-not-allowed font-medium"
-            >
-              Update Password
-            </button>
-          </div>
+            <form onSubmit={handleChangePassword} className="space-y-4">
+              <input
+                type="password"
+                placeholder="Current password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                required
+              />
+              <input
+                type="password"
+                placeholder="New password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                required
+              />
+              <input
+                type="password"
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
+                required
+              />
+              <button
+                type="submit"
+                className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium"
+              >
+                Update Password
+              </button>
+            </form>
+          </section>
 
-          {/* Logout (Static Display) */}
-          <div className="rounded-2xl border border-red-300 bg-white shadow-sm p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <LogOut className="h-5 w-5 text-red-500" />
-              <h2 className="text-xl font-semibold text-red-600">Logout</h2>
+          {/* Logout */}
+          <section className="bg-white shadow-md rounded-2xl p-8 border border-orange-200">
+            <div className="flex items-center gap-3 mb-6">
+              <LogOut className="h-6 w-6 text-orange-500" />
+              <h2 className="text-2xl font-semibold text-orange-600">Logout</h2>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
-              Sign out of your admin account.
-            </p>
+            <p className="text-gray-500 mb-4">Sign out of your admin account.</p>
             <button
-              disabled
-              className="w-full px-4 py-2 bg-red-300 text-white rounded-lg cursor-not-allowed font-medium"
+              onClick={handleLogout}
+              className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium"
             >
               Log Out
             </button>
-          </div>
+          </section>
         </div>
       </div>
     </div>
-  )
+  );
 }
