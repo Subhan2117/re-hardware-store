@@ -1,6 +1,6 @@
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { AuthProvider } from '@/api/login/context/AuthContext';
+import { AuthProvider } from '@/app/api/login/context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { Analytics } from '@vercel/analytics/next';
 

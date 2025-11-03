@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Package, Plus, Search } from 'lucide-react';
 import ProductsTable from '@/app/component/admin-comps/ProductsTable';
 import ProductStatCard from '@/app/component/admin-comps/ProductStatCard';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 import {
   collection,
   getDocs,
@@ -92,7 +92,7 @@ export default function Page() {
               </p>
             </div>
             <Link
-            href={'/admin/products/new'}
+              href={'/admin/products/new'}
               className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white shadow-lg flex items-center px-2 py-1 rounded-xl"
               onClick={() => setShowNewProduct(true)}
             >

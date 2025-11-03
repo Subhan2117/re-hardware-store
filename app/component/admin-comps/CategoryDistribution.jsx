@@ -1,7 +1,7 @@
-"use client";
+'use client';
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 
 const DEFAULT_CATEGORIES = [
   { name: 'Power Tools', value: 35 },
@@ -33,7 +33,10 @@ export default function CategoryDistribution({ data: initialData = null }) {
         let total = 0;
         snap.forEach((doc) => {
           const product = doc.data();
-          const cat = (product.category || 'Uncategorized').replace(/[-_]/g, ' ');
+          const cat = (product.category || 'Uncategorized').replace(
+            /[-_]/g,
+            ' '
+          );
           counts[cat] = (counts[cat] || 0) + 1;
           total += 1;
         });
@@ -73,7 +76,9 @@ export default function CategoryDistribution({ data: initialData = null }) {
           <div className="relative w-48 h-48">
             <svg viewBox="0 0 100 100" className="transform -rotate-90">
               {data.reduce((acc, category, index) => {
-                const prevTotal = data.slice(0, index).reduce((s, c) => s + c.value, 0);
+                const prevTotal = data
+                  .slice(0, index)
+                  .reduce((s, c) => s + c.value, 0);
                 const startAngle = (prevTotal / 100) * 360;
                 const endAngle = ((prevTotal + category.value) / 100) * 360;
                 const largeArc = category.value > 50 ? 1 : 0;
@@ -108,9 +113,13 @@ export default function CategoryDistribution({ data: initialData = null }) {
                   className="w-4 h-4 rounded-full"
                   style={{ background: fills[index % fills.length] }}
                 />
-                <span className="text-sm font-medium text-gray-900">{category.name}</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {category.name}
+                </span>
               </div>
-              <span className="text-sm font-bold text-gray-900">{category.value}%</span>
+              <span className="text-sm font-bold text-gray-900">
+                {category.value}%
+              </span>
             </div>
           ))}
         </div>

@@ -1,15 +1,15 @@
-"use client";
-import React, { useState } from "react";
-import { Star } from "lucide-react";
-import { db } from "../../api/firebase/firebase";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+'use client';
+import React, { useState } from 'react';
+import { Star } from 'lucide-react';
+import { db } from '../api/firebase/firebase';
+import { collection, addDoc, Timestamp } from 'firebase/firestore';
 
 export default function WriteReview({ onClose, productId, onPublished }) {
-  const [name, setName] = useState("");
+  const [name, setName] = useState('');
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(null);
-  const [review, setReview] = useState("");
-  const [title, setTitle] = useState("");
+  const [review, setReview] = useState('');
+  const [title, setTitle] = useState('');
 
   const handleSubmit = async () => {
     if (!productId) {
@@ -18,7 +18,7 @@ export default function WriteReview({ onClose, productId, onPublished }) {
     }
 
     try {
-      await addDoc(collection(db, "reviews"), {
+      await addDoc(collection(db, 'reviews'), {
         author: name || 'Anonymous',
         title: title || '',
         comment: review || '',
@@ -31,7 +31,7 @@ export default function WriteReview({ onClose, productId, onPublished }) {
       // notify parent to refresh reviews
       if (typeof onPublished === 'function') onPublished();
     } catch (error) {
-      console.error("Error adding review:", error);
+      console.error('Error adding review:', error);
     }
 
     onClose(); // closes modal after publishing
@@ -40,7 +40,9 @@ export default function WriteReview({ onClose, productId, onPublished }) {
   return (
     <div className="fixed inset-0 flex items-center justify-center bg-black/10 z-50">
       <div className="bg-white p-6 rounded-2xl shadow-xl w-full max-w-md">
-        <h2 className="text-xl font-semibold mb-4 text-center">Write a Review</h2>
+        <h2 className="text-xl font-semibold mb-4 text-center">
+          Write a Review
+        </h2>
 
         {/* Name */}
         <input
@@ -63,8 +65,8 @@ export default function WriteReview({ onClose, productId, onPublished }) {
                 onMouseLeave={() => setHover(null)}
                 className={`h-6 w-6 cursor-pointer ${
                   ratingValue <= (hover || rating)
-                    ? "text-yellow-400 fill-yellow-400"
-                    : "text-gray-300"
+                    ? 'text-yellow-400 fill-yellow-400'
+                    : 'text-gray-300'
                 }`}
               />
             );

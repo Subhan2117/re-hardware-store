@@ -1,10 +1,10 @@
 'use client';
 import { ref as sRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/api/firebase/firebase';
+import { storage } from '@/app/api/firebase/firebase';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Upload, Package, Plus, X } from 'lucide-react';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 // add to your imports
 import {
   collection,

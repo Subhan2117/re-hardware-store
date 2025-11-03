@@ -1,20 +1,20 @@
-"use client";
-import { db } from "@/api/firebase/firebase";
-import { addDoc, collection, Timestamp } from "firebase/firestore";
-import React, { useState } from "react";
+'use client';
+import { db } from '@/app/api/firebase/firebase';
+import { addDoc, collection, Timestamp } from 'firebase/firestore';
+import React, { useState } from 'react';
 
 export default function NewCategoryModal({ onClose }) {
   const [categoryName, setCategoryName] = useState('');
 
   const handleSubmit = async () => {
     try {
-      await addDoc(collection(db, "categories"), {
+      await addDoc(collection(db, 'categories'), {
         name: categoryName,
         filter: categoryName.toLowerCase().replace(' ', '-'),
         createdAt: Timestamp.now(),
       });
     } catch (error) {
-      console.error("Error adding category:", error);
+      console.error('Error adding category:', error);
     }
   };
 

@@ -29,3 +29,4 @@ export { auth, db };
 export const googleAuth = () => signInWithPopup(auth, provider);
 export const emailAuth = (email, password) => 
   createUserWithEmailAndPassword(auth, email, password);
+
