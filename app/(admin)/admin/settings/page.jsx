@@ -1,81 +1,82 @@
-'use client';
+"use client"
 
-import React, { useState } from 'react';
-import { Search } from 'lucide-react';
-import { db } from '@/api/firebase/firebase';
-{/* Settingss */}
+import React from "react"
+import { Mail, Lock, LogOut } from "lucide-react"
+
 export default function Page() {
-  const [username, setUsername] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
-  const [contactName, setContactName] = useState('');
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    console.log('Search for:', username);
-  };
+  const adminName = "John Admin"
+  const currentEmail = "admin@hardware.com"
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white">
-      <div className="mx-auto px-4 py-10">
-
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white p-6">
+      <div className="mx-auto max-w-2xl">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold tracking-tight">Settings</h1>
-          <p className="mt-1 text-sm text-gray-500">Admin settings</p>
+        <div className="mb-10">
+          <h1 className="text-4xl font-bold tracking-tight text-gray-900">Settings</h1>
+          <p className="mt-2 text-gray-500">Admin: {adminName}</p>
         </div>
 
-        {/* Admin Settings Card */}
-        <div className="max-w-6xl bg-white rounded-xl shadow-lg p-6 space-y-6">
-          <h1 className="text-2xl font-bold tracking-tight">Admin Info</h1>
-            <p className=" text-sm text-gray-500">Change your personal information here</p>
-          
-          <label className="block text-sm font-medium text-gray-600 mb-1">Admin username</label>
-          {/* Input for Admin Name */}
-          <form onSubmit={handleSearch} className="flex gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-2 w-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Enter username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-gray-800 focus:outline-none focus:ring-2 focus:ring-amber-400"
-              />
+        {/* Settings Sections */}
+        <div className="space-y-6">
+          {/* Admin Info */}
+          <div className="rounded-2xl border bg-white shadow-sm p-6">
+            <h2 className="text-xl font-semibold mb-4">Admin Info</h2>
+            <div>
+              <p className="text-sm text-gray-500">Current Email</p>
+              <p className="font-medium">{currentEmail}</p>
             </div>
-          </form>
-
-          {/* Admin Email */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Admin Email</label>
-            <input
-              type="email"
-              placeholder="admin@example.com"
-              value={adminEmail}
-              onChange={(e) => setAdminEmail(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
           </div>
 
-          {/* Contact Name */}
-          <div>
-            <label className="block text-sm font-medium text-gray-600 mb-1">Contact Name</label>
-            <input
-              type="text"
-              placeholder="John Doe"
-              value={contactName}
-              onChange={(e) => setContactName(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400"
-            />
+          {/* Change Email (Static Display) */}
+          <div className="rounded-2xl border bg-white shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Mail className="h-5 w-5 text-orange-500" />
+              <h2 className="text-xl font-semibold">Change Email</h2>
+            </div>
+            <p className="text-gray-500">
+              New email: <span className="font-medium">example@hardware.com</span>
+            </p>
+            <button
+              disabled
+              className="mt-3 w-full px-4 py-2 bg-orange-300 text-white rounded-lg cursor-not-allowed font-medium"
+            >
+              Update Email
+            </button>
           </div>
 
-          {/* Save Button */}
-          <button className="w-full py-3 bg-amber-500 text-white font-semibold rounded-lg hover:bg-amber-600 transition">
-            Save Settings
-          </button>
+          {/* Change Password (Static Display) */}
+          <div className="rounded-2xl border bg-white shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <Lock className="h-5 w-5 text-orange-500" />
+              <h2 className="text-xl font-semibold">Change Password</h2>
+            </div>
+            <p className="text-gray-500 mb-3">New password: ••••••••</p>
+            <button
+              disabled
+              className="w-full px-4 py-2 bg-orange-300 text-white rounded-lg cursor-not-allowed font-medium"
+            >
+              Update Password
+            </button>
+          </div>
 
+          {/* Logout (Static Display) */}
+          <div className="rounded-2xl border border-red-300 bg-white shadow-sm p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <LogOut className="h-5 w-5 text-red-500" />
+              <h2 className="text-xl font-semibold text-red-600">Logout</h2>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              Sign out of your admin account.
+            </p>
+            <button
+              disabled
+              className="w-full px-4 py-2 bg-red-300 text-white rounded-lg cursor-not-allowed font-medium"
+            >
+              Log Out
+            </button>
+          </div>
         </div>
-
       </div>
     </div>
-  );
+  )
 }
