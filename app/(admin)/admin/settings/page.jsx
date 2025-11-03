@@ -1,46 +1,86 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Mail, Lock, LogOut } from 'lucide-react';
+import { auth } from '@/api/firebase/firebase';
+import {
+  updateEmail,
+  updatePassword,
+  signOut,
+  reauthenticateWithCredential,
+  EmailAuthProvider,
+  onAuthStateChanged,
+} from 'firebase/auth';
 
 export default function AdminSettings() {
-  const [adminName] = useState('Admin name');
-  const [currentEmail, setCurrentEmail] = useState('admin@hardware.com');
+  const [adminName, setAdminName] = useState('');
+  const [currentEmail, setCurrentEmail] = useState('');
   const [newEmail, setNewEmail] = useState('');
+
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  const handleChangeEmail = (e) => {
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setCurrentEmail(user.email);
+        setAdminName(user.displayName || 'Admin');
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const reauthenticate = async () => {
+    const user = auth.currentUser;
+    if (!user) throw new Error("No authenticated user");
+
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    return reauthenticateWithCredential(user, credential);
+  };
+
+  const handleChangeEmail = async (e) => {
     e.preventDefault();
-    if (newEmail.trim()) {
+    
+    try {
+      await reauthenticate();
+      await updateEmail(auth.currentUser, newEmail);
+
       setCurrentEmail(newEmail);
       setNewEmail('');
       alert('Email updated successfully');
-    } else {
-      alert('Please enter a valid email.');
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to update email");
     }
   };
 
-  const handleChangePassword = (e) => {
+  const handleChangePassword = async (e) => {
     e.preventDefault();
-    if (!newPassword || !confirmPassword) {
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
       alert('Please fill out all password fields.');
       return;
     }
-    if (newPassword === confirmPassword) {
+
+    try {
+      await reauthenticate();
+      await updatePassword(auth.currentUser, newPassword);
+
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      alert('Password updated successfully');
-    } else {
-      alert('Passwords do not match.');
+      alert("Password updated successfully!");
+    } catch (err) {
+      console.error(err);
+      alert(err.message || "Failed to update password");
     }
   };
 
-  const handleLogout = () => {
-    alert('Logging out...');
-    // Implement logout logic here
+  const handleLogout = async () => {
+    await signOut(auth);
+    window.location.href = "/login";
   };
 
   return (
