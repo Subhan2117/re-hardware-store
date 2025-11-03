@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { MoreHorizontal } from 'lucide-react';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
 import { db } from '@/api/firebase/firebase';
 
 const DEFAULT_ORDERS = [
@@ -21,16 +21,25 @@ function badgeClasses(status) {
 }
 
 export default function RecentOrders({ orders: initialOrders = null }) {
-  const [orders, setOrders] = useState(initialOrders || DEFAULT_ORDERS);
+  // default to empty and always try to fetch live recent orders when no prop is provided
+  const [orders, setOrders] = useState(initialOrders ?? []);
 
   useEffect(() => {
-    if (initialOrders) return; // parent provided orders
+    if (initialOrders) {
+      setOrders(initialOrders);
+      return; // parent provided orders
+    }
 
     const fetchOrders = async () => {
       try {
-        const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+        // fetch the 5 most recent orders by createdAt
+        const q = query(
+          collection(db, 'orders'),
+          orderBy('createdAt', 'desc'),
+          limit(5)
+        );
         const snap = await getDocs(q);
-        const fetched = snap.docs.slice(0, 5).map((doc) => {
+        const fetched = snap.docs.map((doc) => {
           const data = doc.data();
           return {
             id: data.orderNumber || `#${doc.id.slice(0, 6)}`,
@@ -39,7 +48,7 @@ export default function RecentOrders({ orders: initialOrders = null }) {
             status: data.status || 'processing',
           };
         });
-        if (fetched.length) setOrders(fetched);
+        setOrders(fetched);
       } catch (err) {
         console.error('Error fetching recent orders', err);
       }
@@ -60,23 +69,28 @@ export default function RecentOrders({ orders: initialOrders = null }) {
         </button>
       </div>
       <div className="p-5 space-y-3">
-        {orders.map((order) => (
-          <div
-            key={order.id}
-            className="flex items-center justify-between p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-all border border-orange-100"
-          >
-            <div className="flex-1">
-              <div className="font-semibold text-gray-900 text-sm">{order.id}</div>
-              <div className="text-xs text-gray-600">{order.customer}</div>
+        {orders.length > 0 &&
+          orders.map((order) => (
+            <div
+              key={order.id}
+              className="flex items-center justify-between p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-all border border-orange-100"
+            >
+              <div className="flex-1">
+                <div className="font-semibold text-gray-900 text-sm">{order.id}</div>
+                <div className="text-xs text-gray-600">{order.customer}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-gray-900">${order.amount}</div>
+                <span className={`inline-block mt-1 px-2 py-1 rounded text-xs font-medium ${badgeClasses(order.status)}`}>
+                  {order.status}
+                </span>
+              </div>
             </div>
-            <div className="text-right">
-              <div className="font-bold text-gray-900">${order.amount}</div>
-              <span className={`inline-block mt-1 px-2 py-1 rounded text-xs font-medium ${badgeClasses(order.status)}`}>
-                {order.status}
-              </span>
-            </div>
-          </div>
-        ))}
+          ))}
+
+        {orders.length === 0 && (
+          <div className="text-sm text-gray-600">No recent orders.</div>
+        )}
       </div>
     </div>
   );
