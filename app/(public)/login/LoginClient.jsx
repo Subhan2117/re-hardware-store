@@ -20,12 +20,28 @@ export default function LoginClient() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminKey, setAdminKey] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isAdmin) {
-      console.log('Admin login with key:', adminKey);
+    try {
+      const user = await onEmailSubmit(e);
+
+      if (!isAdmin) {
+        return;
+      }
+
+      const idTokenResult = await user.getIdTokenResult(true);
+
+      if (!idTokenResult.claims.admin) {
+        alert("Unauthorized. Admin access only");
+        await user.auth.signOut();
+        return;
+      }
+
+      console.log("Admin authenticated");
+      window.location.href = "/admin/dashboard";
+    } catch (err) {
+      console.error("login failed:", err);
     }
-    onEmailSubmit(e);
   };
 
   return (

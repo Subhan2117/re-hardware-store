@@ -24,10 +24,11 @@ export default function useLogin() {
     setError('');
     setIsEmailLoading(true);
     try {
-      await login(email, password);
-      router.push('/');
+      const userCredential = await login(email, password);
+      return userCredential.user;
     } catch (err) {
       setError('Failed to log in: ' + (err?.message || 'Unknown error'));
+      throw err;
     } finally {
       setIsEmailLoading(false);
     }
