@@ -19,6 +19,7 @@ export default function OrdersPage() {
         const productList = productSnapshot.docs.map(doc => ({
           id: doc.id,
           name: doc.data().name,
+          price: doc.data().price || 0, // include price
         }));
         setProducts(productList);
 
@@ -29,7 +30,7 @@ export default function OrdersPage() {
           ...doc.data(),
         }));
 
-        // Map product IDs to names
+        // Map product IDs to names and prices
         const ordersWithNames = ordersList.map(order => ({
           ...order,
           products: order.products.map(p => {
@@ -37,6 +38,7 @@ export default function OrdersPage() {
             return {
               ...p,
               name: product ? product.name : `Unknown (${p.productId})`,
+              price: product ? product.price : 0,
             };
           }),
         }));
@@ -52,14 +54,13 @@ export default function OrdersPage() {
     fetchData();
   }, []);
 
+  // Filtering and searching
   const filteredOrders = useMemo(() => {
     let filtered = orders;
 
-    // Filter buttons
     if (filter === 'priority') filtered = filtered.filter(o => o.status === 'In Transit');
     if (filter === 'recent') filtered = [...filtered].sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
 
-    // Search bar
     if (searchTerm.trim() !== '') {
       filtered = filtered.filter(order => {
         const text = order.trackingNumber + ' ' + order.status + ' ' + order.products.map(p => p.name).join(' ');
@@ -134,6 +135,7 @@ export default function OrdersPage() {
                 <th className="px-6 py-3">Tracking #</th>
                 <th className="px-6 py-3">Products</th>
                 <th className="px-6 py-3">Quantities</th>
+                <th className="px-6 py-3">Order Total</th>
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3">Estimated Delivery</th>
                 <th className="px-6 py-3">Last Update</th>
@@ -143,27 +145,36 @@ export default function OrdersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-4">
+                  <td colSpan="7" className="text-center py-4">
                     Loading orders...
                   </td>
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-4">
+                  <td colSpan="7" className="text-center py-4">
                     No orders found.
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map(order => (
-                  <tr key={order.id} className="border-b hover:bg-gray-50">
-                    <td className="px-6 py-4">{order.trackingNumber}</td>
-                    <td className="px-6 py-4">{order.products.map(p => p.name).join(', ')}</td>
-                    <td className="px-6 py-4">{order.products.map(p => p.quantity).join(', ')}</td>
-                    <td className="px-6 py-4">{order.status}</td>
-                    <td className="px-6 py-4">{order.estimatedDelivery}</td>
-                    <td className="px-6 py-4">{order.lastUpdate}</td>
-                  </tr>
-                ))
+                filteredOrders.map(order => {
+                  //Calculates total
+                  const total = order.products.reduce(
+                    (sum, p) => sum + (p.price || 0) * (p.quantity || 0),
+                    0
+                  );
+
+                  return (
+                    <tr key={order.id} className="border-b hover:bg-gray-50">
+                      <td className="px-6 py-4">{order.trackingNumber}</td>
+                      <td className="px-6 py-4">{order.products.map(p => p.name).join(', ')}</td>
+                      <td className="px-6 py-4">{order.products.map(p => p.quantity).join(', ')}</td>
+                      <td className="px-6 py-4">${total.toFixed(2)}</td>
+                      <td className="px-6 py-4">{order.status}</td>
+                      <td className="px-6 py-4">{order.estimatedDelivery}</td>
+                      <td className="px-6 py-4">{order.lastUpdate}</td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
