@@ -1,6 +1,9 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { DollarSign, ArrowUpRight, ShoppingCart, Package, FolderTree } from 'lucide-react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/api/firebase/firebase';
 
 
 const DEFAULT_STATS = { revenue: 42350, orders: 1234, products: 249, categories: 12 };
@@ -28,7 +31,61 @@ function StatCard({ title, value, icon: Icon, accentClass, subtext }) {
     </div>
   );
 }
-export default function StatCards({ stats = DEFAULT_STATS }) {
+
+export default function StatCards({ stats: initialStats = DEFAULT_STATS }) {
+  const [stats, setStats] = useState(initialStats);
+
+  useEffect(() => {
+    let mounted = true;
+    async function fetchStats() {
+      try {
+        // Orders: count and sum revenue
+        const ordersSnap = await getDocs(collection(db, 'orders'));
+        let revenue = 0;
+        ordersSnap.forEach((doc) => {
+          const data = doc.data();
+          const value = data?.total ?? data?.amount ?? 0;
+          // ensure numeric
+          const num = typeof value === 'number' ? value : parseFloat(value) || 0;
+          revenue += num;
+        });
+
+        const ordersCount = ordersSnap.size;
+
+        // Products: count and unique categories
+        const productsSnap = await getDocs(collection(db, 'products'));
+        const productsCount = productsSnap.size;
+        const categories = new Set();
+        productsSnap.forEach((doc) => {
+          const data = doc.data();
+          const cat = data?.category ?? data?.categories ?? null;
+          if (!cat) return;
+          if (Array.isArray(cat)) {
+            cat.forEach((c) => c && categories.add(c));
+          } else {
+            categories.add(cat);
+          }
+        });
+
+        const categoriesCount = categories.size || initialStats.categories;
+
+        if (mounted) {
+          setStats({
+            revenue: Math.round(revenue),
+            orders: ordersCount,
+            products: productsCount,
+            categories: categoriesCount,
+          });
+        }
+      } catch (err) {
+        // keep defaults on error
+        // console.error('Failed to fetch stats', err);
+      }
+    }
+    fetchStats();
+    return () => { mounted = false; };
+  }, []);
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       <StatCard
