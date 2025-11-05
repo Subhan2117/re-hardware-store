@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowLeft, Hammer } from 'lucide-react';
 import LiquidEther from '../../component/background/LiquidEther';
 import LoginClient from './LoginClient';
+import { Suspense } from 'react';
 
 export default function Page() {
   return (
@@ -45,7 +46,10 @@ export default function Page() {
           </Link>
           <p className="flex flex-col text-xs md:text-sm text-gray-600 text-right">
             Don&apos;t have an account?
-            <Link href="/register" className="text-orange-600 hover:text-orange-700 font-semibold">
+            <Link
+              href="/register"
+              className="text-orange-600 hover:text-orange-700 font-semibold"
+            >
               Sign up free
             </Link>
           </p>
@@ -55,7 +59,9 @@ export default function Page() {
       {/* Card */}
       <main className="relative z-10 flex justify-center mt-20">
         <div className="w-full max-w-md backdrop-blur-lg bg-white/80 border border-amber-200/40 shadow-2xl rounded-2xl p-8">
-          <LoginClient />
+          <Suspense fallback={<div>Loading login…</div>}>
+            <LoginClient />
+          </Suspense>
         </div>
       </main>
     </div>
