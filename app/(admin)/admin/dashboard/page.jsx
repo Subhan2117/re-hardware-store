@@ -8,6 +8,7 @@ import TopProducts from '@/app/component/admin-comps/TopProducts';
 import ActiveCustomers from '@/app/component/admin-comps/ActiveCustomer';
 import GrowthCard from '@/app/component/admin-comps/GrowthCard';
 export default function AdminPage() {
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white">
       

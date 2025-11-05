@@ -54,26 +54,35 @@ export default function useLogin() {
   function setRoleCookies(role) {
     if (typeof document === 'undefined') return;
 
-    const maxAge = 60 * 60 * 24 * 5; // 5 days in seconds
+    const maxAge = 60 * 60 * 24 * 5; // 5 days
 
     document.cookie = `logged_in=true; path=/; max-age=${maxAge}`;
     document.cookie = `role=${role}; path=/; max-age=${maxAge}`;
   }
+  // central post-login handler
+  function handlePostLogin(role, mode) {
+    setRoleCookies(role);
 
+    if (mode === 'admin') {
+      if (role !== 'admin') {
+        // 🚫 not actually an admin → no redirect
+        setError("This account doesn't have admin access.");
+        return;
+      }
+      // ✅ real admin wanting admin area
+      router.push('/admin/dashboard');
+    } else {
+      // normal user flow (or admin choosing to go to store)
+      router.push(next);
+    }
+  }
   const onEmailSubmit = async ({ mode = 'user' } = {}) => {
     setError('');
     setIsEmailLoading(true);
     try {
       const cred = await login(email, password);
-      const role = await ensureUserDoc(cred.user);
-      setRoleCookies(role);
-
-      if (mode === 'admin') {
-        // middleware will double-check role cookie
-        router.push('/admin/dashboard');
-      } else {
-        router.push(next);
-      }
+      const role = await ensureUserDoc(cred.user); // 'admin' or 'user'
+      handlePostLogin(role, mode);
     } catch (err) {
       setError(err?.message || 'Failed to log in');
     } finally {
@@ -87,15 +96,9 @@ export default function useLogin() {
     try {
       const cred = await signInWithGoogle();
       const role = await ensureUserDoc(cred.user);
-      setRoleCookies(role);
-
-      if (mode === 'admin') {
-        router.push('/admin/dashboard');
-      } else {
-        router.push(next);
-      }
+      handlePostLogin(role, mode);
     } catch (err) {
-      setError(err?.message || 'Google sign-in failed: ');
+      setError(err?.message || 'Google sign-in failed');
     } finally {
       setIsGoogleLoading(false);
     }

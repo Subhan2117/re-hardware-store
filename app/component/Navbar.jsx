@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Hammer, Menu, X, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../api/login/context/AuthContext';
@@ -22,9 +22,15 @@ export default function Navbar() {
     { label: 'Store', href: '/store' },
     { label: 'About', href: '/about' },
     { label: 'Track Order', href: '/tracking' },
-    { label: 'Admin', href: '/admin/dashboard' },
   ];
 
+  const [role, setRole] = useState(null);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const match = document.cookie.match(/(?:^|; )role=([^;]+)/);
+    setRole(match ? decodeURIComponent(match[1]) : null);
+  }, []);
   // Don’t show navbar on admin routes
   if (pathname.startsWith('/admin')) {
     return null;
@@ -33,16 +39,9 @@ export default function Navbar() {
   const isLoggedIn = !!currentUser;
   const handleLogout = async () => {
     try {
-      // 1. Firebase client logout
       await logout();
 
-      // 2. Clear the cookies that middleware uses
-      if (typeof document !== 'undefined') {
-        document.cookie = 'logged_in=; path=/; max-age=0';
-        document.cookie = 'role=; path=/; max-age=0';
-      }
-
-      // 3. (Optional) if you still keep a session-logout route, you can hit it
+      // If you don’t actually have this route, remove it
       await fetch('/api/auth/session-logout', { method: 'POST' });
     } catch (e) {
       console.error('Logout failed', e);
@@ -77,6 +76,14 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
+            {role === 'admin' && (
+              <Link
+                href="/admin/dashboard"
+                className="text-slate-600 hover:text-amber-600 transition-all ease-in-out duration-300 font-medium px-4 py-2 rounded-lg hover:bg-white/30 hover:backdrop-blur-md"
+              >
+                Admin
+              </Link>
+            )}
           </div>
 
           {/* Actions + Mobile toggle */}
@@ -138,6 +145,15 @@ export default function Navbar() {
                     >
                       My Orders
                     </Link>
+                    {role === 'admin' && (
+                      <Link
+                        href="/admin/dashboard"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="block px-4 py-2 hover:bg-slate-50"
+                      >
+                        Admin Portal
+                      </Link>
+                    )}
                     {/* Later you can conditionally show Admin Portal here if user is admin */}
                     <button
                       onClick={handleLogout}
@@ -151,7 +167,7 @@ export default function Navbar() {
             )}
           </div>
           {/* Hamburger (mobile only) */}
-          <button className=" hidden text-slate-600 hover:text-amber-600 transition-all duration-300 ">
+          <button className=" md:hidden text-slate-600 hover:text-amber-600 transition-all duration-300 ">
             <Link href={'/cart'}>
               <ShoppingCart className="w-5 h-5" />
             </Link>
@@ -174,7 +190,9 @@ export default function Navbar() {
       {/* Mobile menu panel */}
       <div
         className={`md:hidden transition-[max-height,opacity] duration-300 ease-out overflow-hidden ${
-          open ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+          open
+            ? 'max-h-[80vh] opacity-100 overflow-y-auto'
+            : 'max-h-0 opacity-0 overflow-hidden'
         }`}
       >
         <div className="px-6 pb-4 pt-0 space-y-2 bg-white/60 backdrop-blur-xl border-t border-slate-200/50">
@@ -188,7 +206,15 @@ export default function Navbar() {
               {item.label}
             </Link>
           ))}
-
+          {role === 'admin' && (
+            <Link
+              href="/admin/dashboard"
+              onClick={() => setOpen(false)}
+              className="block w-full text-left px-4 py-3 rounded-xl text-slate-700 font-medium hover:text-amber-700 hover:bg-white/60 transition"
+            >
+              Admin Portal
+            </Link>
+          )}
           {/* Mobile-only actions */}
           <div className="flex gap-3">
             {/* Mobile-only actions */}
