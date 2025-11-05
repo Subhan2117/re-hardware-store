@@ -9,7 +9,7 @@ import {
   startAfter,
   getDocs,
 } from 'firebase/firestore';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 
 export default function useProducts({
   pageSize = 10,

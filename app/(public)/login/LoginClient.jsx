@@ -7,9 +7,12 @@ import useLogin from '@/app/hooks/useLogin.jsx';
 
 export default function LoginClient() {
   const {
-    email, setEmail,
-    password, setPassword,
-    showPassword, setShowPassword,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    showPassword,
+    setShowPassword,
     error,
     isEmailLoading,
     isGoogleLoading,
@@ -18,14 +21,12 @@ export default function LoginClient() {
   } = useLogin();
 
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminKey, setAdminKey] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isAdmin) {
-      console.log('Admin login with key:', adminKey);
-    }
-    onEmailSubmit(e);
+    await onEmailSubmit({
+      mode: isAdmin ? 'admin' : 'user',
+    });
   };
 
   return (
@@ -44,7 +45,11 @@ export default function LoginClient() {
           className="border border-gray-300 mb-5 w-full py-2 rounded-2xl bg-gray-100 shadow-sm
                      hover:bg-gray-200 hover:-translate-y-0.5 active:translate-y-0 transition
                      disabled:opacity-60 disabled:cursor-not-allowed"
-          onClick={onGoogleSignIn}
+          onClick={() =>
+            onGoogleSignIn({
+              mode: isAdmin ? 'admin' : 'user',
+            })
+          }
           disabled={isGoogleLoading || isEmailLoading}
           aria-busy={isGoogleLoading}
         >
@@ -96,7 +101,10 @@ export default function LoginClient() {
 
         {/* Email */}
         <div className="flex flex-col">
-          <label htmlFor="email" className="mb-2 text-sm font-semibold text-slate-700">
+          <label
+            htmlFor="email"
+            className="mb-2 text-sm font-semibold text-slate-700"
+          >
             Email
           </label>
           <input
@@ -113,7 +121,10 @@ export default function LoginClient() {
 
         {/* Password */}
         <div className="flex flex-col">
-          <label htmlFor="password" className="mb-2 text-sm font-semibold text-slate-700">
+          <label
+            htmlFor="password"
+            className="mb-2 text-sm font-semibold text-slate-700"
+          >
             Password
           </label>
           <div className="relative">
@@ -142,24 +153,6 @@ export default function LoginClient() {
             </button>
           </div>
         </div>
-
-        {/* Admin Key */}
-        {isAdmin && (
-          <div className="flex flex-col">
-            <label htmlFor="adminKey" className="mb-2 text-sm font-semibold text-slate-700">
-              Admin Key
-            </label>
-            <input
-              id="adminKey"
-              type="text"
-              placeholder="Enter Admin Key"
-              value={adminKey}
-              onChange={(e) => setAdminKey(e.target.value)}
-              className="w-full px-4 py-3 border border-red-200 rounded-xl text-base text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
-              required
-            />
-          </div>
-        )}
 
         {/* Extras */}
         <div className="flex items-center justify-between">
@@ -195,8 +188,10 @@ export default function LoginClient() {
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Signing in…
               </span>
+            ) : isAdmin ? (
+              'Sign In as Admin'
             ) : (
-              isAdmin ? 'Sign In as Admin' : 'Sign In'
+              'Sign In'
             )}
           </button>
         </div>

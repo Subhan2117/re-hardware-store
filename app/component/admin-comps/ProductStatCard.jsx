@@ -1,6 +1,6 @@
 'use client';
 
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 import {
   collection,
   getCountFromServer,
