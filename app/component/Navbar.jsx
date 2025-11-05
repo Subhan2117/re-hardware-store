@@ -4,16 +4,53 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Hammer, Menu, X, ShoppingCart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../api/login/context/AuthContext';
+import { usePathname, useRouter } from 'next/navigation';
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { totalItems } = useCart();
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const { currentUser, logout } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const displayName =
+    currentUser?.displayName || currentUser?.email || 'Account';
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Store', href: '/store' },
     { label: 'About', href: '/about' },
-    { label: 'Track Order', href: '/tracking'}
+    { label: 'Track Order', href: '/tracking' },
+    { label: 'Admin', href: '/admin/dashboard' },
   ];
+
+  // Don’t show navbar on admin routes
+  if (pathname.startsWith('/admin')) {
+    return null;
+  }
+
+  const isLoggedIn = !!currentUser;
+  const handleLogout = async () => {
+    try {
+      // 1. Firebase client logout
+      await logout();
+
+      // 2. Clear the cookies that middleware uses
+      if (typeof document !== 'undefined') {
+        document.cookie = 'logged_in=; path=/; max-age=0';
+        document.cookie = 'role=; path=/; max-age=0';
+      }
+
+      // 3. (Optional) if you still keep a session-logout route, you can hit it
+      await fetch('/api/auth/session-logout', { method: 'POST' });
+    } catch (e) {
+      console.error('Logout failed', e);
+    } finally {
+      setUserMenuOpen(false);
+      router.push('/');
+    }
+  };
 
   return (
     <nav className="fixed top-0 w-full z-50 backdrop-blur-xl border-b border-slate-200/50 bg-white/40 shadow-lg">
@@ -54,18 +91,64 @@ export default function Navbar() {
                 )}
               </Link>
             </button>
-            <Link
-              href="/login"
-              className="text-amber-700 bg-amber-50/80 hover:bg-amber-100 shadow-lg shadow-amber-500/20 transition-all duration-300 md:px-6 md:py-2 px-3 py-1 rounded-2xl"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-500/20 transition-all duration-300 md:px-6 md:py-2 px-2 py-1 rounded-2xl"
-            >
-              Get Started
-            </Link>
+            {!isLoggedIn ? (
+              <>
+                <Link
+                  href="/login"
+                  className="text-amber-700 bg-amber-50/80 hover:bg-amber-100 shadow-lg shadow-amber-500/20 transition-all duration-300 md:px-6 md:py-2 px-3 py-1 rounded-2xl"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-500/20 transition-all duration-300 md:px-6 md:py-2 px-2 py-1 rounded-2xl"
+                >
+                  Get Started
+                </Link>
+              </>
+            ) : (
+              // User dropdown
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  className="flex items-center gap-2 px-3 py-2 rounded-full border border-slate-200 bg-white shadow-sm hover:shadow-md transition"
+                >
+                  <div className="h-8 w-8 rounded-full bg-gradient-to-r from-amber-600 to-orange-600 text-white flex items-center justify-center text-xs font-bold">
+                    {displayName.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium text-slate-800 max-w-[140px] truncate">
+                    {displayName}
+                  </span>
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute right-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white shadow-lg text-sm overflow-hidden">
+                    <Link
+                      href="/user/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 hover:bg-slate-50"
+                    >
+                      My Profile
+                    </Link>
+                    <Link
+                      href="/user/orders"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="block px-4 py-2 hover:bg-slate-50"
+                    >
+                      My Orders
+                    </Link>
+                    {/* Later you can conditionally show Admin Portal here if user is admin */}
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600"
+                    >
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
           {/* Hamburger (mobile only) */}
           <button className=" hidden text-slate-600 hover:text-amber-600 transition-all duration-300 ">
@@ -107,21 +190,53 @@ export default function Navbar() {
           ))}
 
           {/* Mobile-only actions */}
-          <div className="flex gap-3 pt-2">
-            <Link
-              href="/login"
-              onClick={() => setOpen(false)}
-              className="flex-1 text-center text-amber-700 bg-amber-50/80 hover:bg-amber-100 rounded-xl px-4 py-3 font-semibold"
-            >
-              Login
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setOpen(false)}
-              className="flex-1 text-center bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl px-4 py-3 font-semibold"
-            >
-              Get Started
-            </Link>
+          <div className="flex gap-3">
+            {/* Mobile-only actions */}
+            {!isLoggedIn ? (
+              <div className="flex-2 gap-3 ">
+                <Link
+                  href="/login"
+                  onClick={() => setOpen(false)}
+                  className=" text-center text-amber-700 bg-amber-50/80 hover:bg-amber-100 rounded-xl px-4 py-3 font-semibold"
+                >
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  onClick={() => setOpen(false)}
+                  className=" text-center bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-xl px-4 py-3 font-semibold"
+                >
+                  Get Started
+                </Link>
+              </div>
+            ) : (
+              <div className="pt-2 space-y-2">
+                <Link
+                  href="/user/profile"
+                  onClick={() => {
+                    setOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-3 rounded-xl text-slate-700 font-medium hover:text-amber-700 hover:bg-white/60 transition"
+                >
+                  My Profile
+                </Link>
+                <Link
+                  href="/user/orders"
+                  onClick={() => {
+                    setOpen(false);
+                  }}
+                  className="block w-full text-left px-4 py-3 rounded-xl text-slate-700 font-medium hover:text-amber-700 hover:bg-white/60 transition"
+                >
+                  My Orders
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-left px-4 py-3 rounded-xl text-red-600 font-semibold hover:bg-red-50 transition"
+                >
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -21,13 +21,11 @@ export default function LoginClient() {
   } = useLogin();
 
   const [isAdmin, setIsAdmin] = useState(false);
-  const [adminKey, setAdminKey] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     await onEmailSubmit({
       mode: isAdmin ? 'admin' : 'user',
-      pin: isAdmin ? adminKey : undefined,
     });
   };
 
@@ -50,7 +48,6 @@ export default function LoginClient() {
           onClick={() =>
             onGoogleSignIn({
               mode: isAdmin ? 'admin' : 'user',
-              pin: isAdmin ? adminKey : undefined,
             })
           }
           disabled={isGoogleLoading || isEmailLoading}
@@ -156,27 +153,6 @@ export default function LoginClient() {
             </button>
           </div>
         </div>
-
-        {/* Admin Key */}
-        {isAdmin && (
-          <div className="flex flex-col">
-            <label
-              htmlFor="adminKey"
-              className="mb-2 text-sm font-semibold text-slate-700"
-            >
-              Admin Key
-            </label>
-            <input
-              id="adminKey"
-              type="text"
-              placeholder="Enter Admin Key"
-              value={adminKey}
-              onChange={(e) => setAdminKey(e.target.value)}
-              className="w-full px-4 py-3 border border-red-200 rounded-xl text-base text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-sm"
-              required
-            />
-          </div>
-        )}
 
         {/* Extras */}
         <div className="flex items-center justify-between">
