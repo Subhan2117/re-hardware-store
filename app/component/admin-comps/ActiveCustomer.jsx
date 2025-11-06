@@ -59,8 +59,15 @@ export default function ActiveCustomers({ data = null }) {
         const returning = activeCount - newVisitors;
 
         // delta vs yesterday active count (percent)
-        const yesterdayCount = customersYesterday.size || 1; // avoid div by zero
-        const deltaPct = Math.round(((activeCount - yesterdayCount) / yesterdayCount) * 100 * 10) / 10;
+        const yesterdayCount = customersYesterday.size;
+        let deltaPct = 0;
+        if (yesterdayCount === 0) {
+          // no data yesterday: if also zero today, show 0% (no change);
+          // if we have activity today but none yesterday, show +100% as a practical indicator of new activity
+          deltaPct = activeCount === 0 ? 0 : 100;
+        } else {
+          deltaPct = Math.round(((activeCount - yesterdayCount) / yesterdayCount) * 100 * 10) / 10;
+        }
 
         setMetrics({ count: activeCount, newVisitors, returning, deltaPct });
       } catch (err) {

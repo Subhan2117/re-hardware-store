@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { TrendingUp } from 'lucide-react';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '@/api/firebase/firebase';
 
 const DEFAULT_GROWTH = { growth: 0, revenue: 0, customers: 0, products: 0 };
@@ -27,22 +27,28 @@ export default function GrowthCard() {
       setLoading(true);
       try {
         const now = new Date();
-        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-        const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const prevMonthEnd = currentMonthStart;
+  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const prevMonthEnd = currentMonthStart;
+
+  // Convert to Firestore Timestamps for reliable querying against Timestamp fields
+  const currentMonthStartTS = Timestamp.fromDate(currentMonthStart);
+  const nextMonthStartTS = Timestamp.fromDate(nextMonthStart);
+  const prevMonthStartTS = Timestamp.fromDate(prevMonthStart);
+  const prevMonthEndTS = Timestamp.fromDate(prevMonthEnd);
 
         // Orders: revenue and unique customers per month
         const ordersRef = collection(db, 'orders');
         const qCurrOrders = query(
           ordersRef,
-          where('createdAt', '>=', currentMonthStart),
-          where('createdAt', '<', nextMonthStart)
+          where('createdAt', '>=', currentMonthStartTS),
+          where('createdAt', '<', nextMonthStartTS)
         );
         const qPrevOrders = query(
           ordersRef,
-          where('createdAt', '>=', prevMonthStart),
-          where('createdAt', '<', prevMonthEnd)
+          where('createdAt', '>=', prevMonthStartTS),
+          where('createdAt', '<', prevMonthEndTS)
         );
 
         const [currOrdersSnap, prevOrdersSnap] = await Promise.all([
@@ -73,8 +79,8 @@ export default function GrowthCard() {
         // Products: compute cumulative totals at month boundaries (catalog size).
         // This avoids showing -100% when there were new products last month but none this month.
         const productsRef = collection(db, 'products');
-        const qPrevTotal = query(productsRef, where('createdAt', '<', currentMonthStart));
-        const qCurrTotal = query(productsRef, where('createdAt', '<', nextMonthStart));
+  const qPrevTotal = query(productsRef, where('createdAt', '<', currentMonthStartTS));
+  const qCurrTotal = query(productsRef, where('createdAt', '<', nextMonthStartTS));
 
         const [prevTotalSnap, currTotalSnap] = await Promise.all([
           getDocs(qPrevTotal),
