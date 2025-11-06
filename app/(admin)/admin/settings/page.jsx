@@ -13,15 +13,16 @@ import {
 } from 'firebase/auth';
 
 export default function AdminSettings() {
+  const [activeTab, setActiveTab] = useState("profile");
   const [adminName, setAdminName] = useState('');
   const [currentEmail, setCurrentEmail] = useState('');
 
-  // Email edit
+  // Edit form states
   const [showEmailForm, setShowEmailForm] = useState(false);
-  const [newEmail, setNewEmail] = useState('');
-
-  // Password edit
   const [showPasswordForm, setShowPasswordForm] = useState(false);
+
+  const [newEmail, setNewEmail] = useState('');
+  const [newPhone, setNewPhone] = useState('');
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -33,7 +34,6 @@ export default function AdminSettings() {
         setAdminName(user.displayName || 'Admin');
       }
     });
-
     return () => unsubscribe();
   }, []);
 
@@ -50,9 +50,8 @@ export default function AdminSettings() {
       await reauthenticate();
       await updateEmail(auth.currentUser, newEmail);
       setCurrentEmail(newEmail);
-      setNewEmail('');
       setShowEmailForm(false);
-      alert('Email updated successfully!');
+      alert('Email updated');
     } catch (err) {
       alert(err.message);
     }
@@ -64,11 +63,8 @@ export default function AdminSettings() {
     try {
       await reauthenticate();
       await updatePassword(auth.currentUser, newPassword);
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
       setShowPasswordForm(false);
-      alert("Password updated!");
+      alert('Password updated');
     } catch (err) {
       alert(err.message);
     }
@@ -76,107 +72,88 @@ export default function AdminSettings() {
 
   const handleLogout = async () => {
     await signOut(auth);
-    window.location.href = "/login";
+    window.location.href = '/login';
   };
 
   return (
     <div className="min-h-screen bg-orange-50 p-8">
-      <div className="mx-auto max-w-3xl space-y-8">
+      <div className="mx-auto max-w-4xl space-y-6">
 
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Settings</h1>
-          <p className="text-gray-600 text-lg">Logged in as: <span className="font-medium">{adminName}</span></p>
+        <div className="text-left mb-6">
+          <h1 className="text-2xl font-bold">Admin Settings</h1>
+          <p className="text-gray-600">Logged in as: <span className="font-medium">{adminName}</span></p>
         </div>
 
-        {/* Admin Info */}
-        <section className="bg-white shadow-md rounded-2xl p-8 border">
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Account Info</h2>
-
-          <div className="flex justify-between items-center">
-            <div>
-              <p className="text-gray-500">Email:</p>
-              <p className="font-medium text-gray-700">{currentEmail}</p>
-            </div>
-            <button 
-              className="text-orange-600 hover:text-orange-700 flex items-center gap-1"
-              onClick={() => setShowEmailForm(true)}
+        {/* Tabs Navbar */}
+        <div className="flex bg-white rounded-xl shadow overflow-hidden border">
+          {['profile', 'security', 'notifications'].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`flex-1 py-3 text-center font-medium transition ${
+                activeTab === tab
+                  ? 'bg-orange-500 text-white'
+                  : 'text-gray-600 hover:bg-orange-100'
+              }`}
             >
-              <Pencil size={16}/> Edit
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
-          </div>
-        </section>
+          ))}
+        </div>
 
-        {/* Email Form */}
-        {showEmailForm && (
-          <form onSubmit={handleChangeEmail} className="bg-white shadow-md rounded-2xl p-6 border space-y-4">
-            <h3 className="text-lg font-semibold flex items-center gap-2"><Mail /> Update Email</h3>
+        {/* Tab Content Card */}
+        <div className="bg-white rounded-xl shadow p-6">
+          {/* PROFILE TAB */}
+          {activeTab === 'profile' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-gray-500">Email</p>
+                  <p>{currentEmail}</p>
+                </div>
+                <button onClick={() => setShowEmailForm(!showEmailForm)} className="text-orange-600 flex items-center gap-1"><Pencil size={16}/> Edit</button>
+              </div>
 
-            <input
-              type="email"
-              placeholder="New Email"
-              value={newEmail}
-              onChange={(e) => setNewEmail(e.target.value)}
-              className="w-full px-4 py-3 border rounded-lg"
-              required
-            />
-
-            <input
-              type="password"
-              placeholder="Current Password"
-              value={currentPassword}
-              onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-4 py-3 border rounded-lg"
-              required
-            />
-
-            <div className="flex gap-3">
-              <button className="flex-1 bg-orange-500 text-white py-2 rounded-lg">Save</button>
-              <button type="button" onClick={() => setShowEmailForm(false)} className="flex-1 border py-2 rounded-lg">Cancel</button>
+              {showEmailForm && (
+                <form onSubmit={handleChangeEmail} className="space-y-3 mt-2">
+                  <input className="border p-2 w-full rounded" placeholder="New Email" value={newEmail} onChange={(e)=>setNewEmail(e.target.value)} required/>
+                  <input className="border p-2 w-full rounded" type="password" placeholder="Current Password" value={currentPassword} onChange={(e)=>setCurrentPassword(e.target.value)} required/>
+                  <button className="bg-orange-500 text-white p-2 rounded w-full">Save</button>
+                </form>
+              )}
+      
             </div>
-          </form>
-        )}
+          )}
 
-        {/* Password Section */}
-        <section className="bg-white shadow-md rounded-2xl p-8 border">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Lock /> Password</h2>
-            <button 
-              className="text-orange-600 hover:text-orange-700 flex items-center gap-1"
-              onClick={() => setShowPasswordForm(true)}
-            >
-              <Pencil size={16}/> Edit
-            </button>
-          </div>
-        </section>
+          {/* SECURITY TAB */}
+          {activeTab === 'security' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h2 className="font-semibold flex items-center gap-2"><Lock/> Password</h2>
+                <button onClick={() => setShowPasswordForm(!showPasswordForm)} className="text-orange-600 flex items-center gap-1"><Pencil size={16}/> Edit</button>
+              </div>
 
-        {/* Password Form */}
-        {showPasswordForm && (
-          <form onSubmit={handleChangePassword} className="bg-white shadow-md rounded-2xl p-6 border space-y-4">
-            <input type="password" placeholder="Current Password" className="w-full px-4 py-3 border rounded-lg"
-              value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
-
-            <input type="password" placeholder="New Password" className="w-full px-4 py-3 border rounded-lg"
-              value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-
-            <input type="password" placeholder="Confirm Password" className="w-full px-4 py-3 border rounded-lg"
-              value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-
-            <div className="flex gap-3">
-              <button className="flex-1 bg-orange-500 text-white py-2 rounded-lg">Save</button>
-              <button type="button" onClick={() => setShowPasswordForm(false)} className="flex-1 border py-2 rounded-lg">Cancel</button>
+              {showPasswordForm && (
+                <form onSubmit={handleChangePassword} className="space-y-3 mt-2">
+                  <input className="border p-2 w-full rounded" type="password" placeholder="Current Password" value={currentPassword} onChange={(e)=>setCurrentPassword(e.target.value)} required/>
+                  <input className="border p-2 w-full rounded" type="password" placeholder="New Password" value={newPassword} onChange={(e)=>setNewPassword(e.target.value)} required/>
+                  <input className="border p-2 w-full rounded" type="password" placeholder="Confirm Password" value={confirmPassword} onChange={(e)=>setConfirmPassword(e.target.value)} required/>
+                  <button className="bg-orange-500 text-white p-2 rounded w-full">Save</button>
+                </form>
+              )}
             </div>
-          </form>
-        )}
+          )}
+
+          {/* NOTIFICATIONS TAB */}
+          {activeTab === 'notifications' && (
+            <div className="text-gray-600 text-center">
+              Notification preferences coming soon
+            </div>
+          )}
+        </div>
 
         {/* Logout */}
-        <section className="bg-white shadow-md rounded-2xl p-8 border border-orange-200 text-center">
-          <h2 className="text-xl font-semibold text-orange-600 flex items-center gap-2 justify-center"><LogOut /> Logout</h2>
-          <button onClick={handleLogout} className="mt-4 w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600">
-            Log Out
-          </button>
-        </section>
-
+        <button onClick={handleLogout} className="bg-orange-500 text-white w-full p-3 rounded-xl hover:bg-orange-600">Logout</button>
       </div>
     </div>
   );
