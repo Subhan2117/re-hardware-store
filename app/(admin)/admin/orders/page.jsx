@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
 export default function OrdersPage() {
@@ -14,32 +14,41 @@ export default function OrdersPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch products
         const productSnapshot = await getDocs(collection(db, 'products'));
         const productList = productSnapshot.docs.map((doc) => ({
           id: doc.id,
           name: doc.data().name,
+          price: doc.data().price || 0,
         }));
         setProducts(productList);
 
-        // Fetch orders
         const orderSnapshot = await getDocs(collection(db, 'orders'));
         const ordersList = orderSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
 
-        // Map product IDs to names
-        const ordersWithNames = ordersList.map((order) => ({
-          ...order,
-          products: order.products.map((p) => {
+        const ordersWithNames = ordersList.map((order) => {
+          const productsWithNames = order.products.map((p) => {
             const product = productList.find((prod) => prod.id === p.productId);
             return {
               ...p,
               name: product ? product.name : `Unknown (${p.productId})`,
+              price: product ? product.price : 0,
             };
-          }),
-        }));
+          });
+
+          const total = productsWithNames.reduce(
+            (sum, p) => sum + (p.price * (p.quantity || 0)),
+            0
+          );
+
+          return {
+            ...order,
+            products: productsWithNames,
+            total,
+          };
+        });
 
         setOrders(ordersWithNames);
       } catch (error) {
@@ -55,7 +64,6 @@ export default function OrdersPage() {
   const filteredOrders = useMemo(() => {
     let filtered = orders;
 
-    // Filter buttons
     if (filter === 'priority')
       filtered = filtered.filter((o) => o.status === 'In Transit');
     if (filter === 'recent')
@@ -63,7 +71,6 @@ export default function OrdersPage() {
         (a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate)
       );
 
-    // Search bar
     if (searchTerm.trim() !== '') {
       filtered = filtered.filter((order) => {
         const text =
@@ -82,13 +89,11 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white">
       <div className="mx-auto max-w-7xl px-4 py-10">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
           <p className="mt-1 text-sm text-gray-500">All orders from Firebase</p>
         </div>
 
-        {/* Search Bar */}
         <div className="mb-4">
           <input
             type="text"
@@ -99,7 +104,6 @@ export default function OrdersPage() {
           />
         </div>
 
-        {/* Filter Buttons */}
         <div className="flex gap-3 mb-6">
           <button
             className={`px-4 py-2 rounded-lg border ${
@@ -135,7 +139,6 @@ export default function OrdersPage() {
           </button>
         </div>
 
-        {/* Orders Table */}
         <div className="overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm">
           <table className="w-full text-left">
             <thead className="bg-gray-100 border-b">
@@ -143,6 +146,7 @@ export default function OrdersPage() {
                 <th className="px-6 py-3">Tracking #</th>
                 <th className="px-6 py-3">Products</th>
                 <th className="px-6 py-3">Quantities</th>
+                <th className="px-6 py-3">Total ($)</th>
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3">Estimated Delivery</th>
                 <th className="px-6 py-3">Last Update</th>
@@ -152,13 +156,13 @@ export default function OrdersPage() {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-4">
+                  <td colSpan="7" className="text-center py-4">
                     Loading orders...
                   </td>
                 </tr>
               ) : filteredOrders.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="text-center py-4">
+                  <td colSpan="7" className="text-center py-4">
                     No orders found.
                   </td>
                 </tr>
@@ -171,6 +175,9 @@ export default function OrdersPage() {
                     </td>
                     <td className="px-6 py-4">
                       {order.products.map((p) => p.quantity).join(', ')}
+                    </td>
+                    <td className="px-6 py-4 font-medium text-gray-800">
+                      ${order.total.toFixed(2)}
                     </td>
                     <td className="px-6 py-4">{order.status}</td>
                     <td className="px-6 py-4">{order.estimatedDelivery}</td>
