@@ -1,12 +1,45 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { MoreHorizontal } from 'lucide-react';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '@/app/api/firebase/firebase';
 
 const DEFAULT_ORDERS = [
-  { id: '#ORD-001', customer: 'John Doe', product: 'Cordless Drill', amount: 99.99, status: 'completed' },
-  { id: '#ORD-002', customer: 'Jane Smith', product: 'Circular Saw', amount: 149.99, status: 'processing' },
-  { id: '#ORD-003', customer: 'Bob Johnson', product: 'Hammer Set', amount: 29.99, status: 'pending' },
-  { id: '#ORD-004', customer: 'Alice Brown', product: 'Paint Roller', amount: 14.99, status: 'completed' },
-  { id: '#ORD-005', customer: 'Charlie Wilson', product: 'Wrench Set', amount: 39.99, status: 'shipped' },
+  {
+    id: '#ORD-001',
+    customer: 'John Doe',
+    product: 'Cordless Drill',
+    amount: 99.99,
+    status: 'completed',
+  },
+  {
+    id: '#ORD-002',
+    customer: 'Jane Smith',
+    product: 'Circular Saw',
+    amount: 149.99,
+    status: 'processing',
+  },
+  {
+    id: '#ORD-003',
+    customer: 'Bob Johnson',
+    product: 'Hammer Set',
+    amount: 29.99,
+    status: 'pending',
+  },
+  {
+    id: '#ORD-004',
+    customer: 'Alice Brown',
+    product: 'Paint Roller',
+    amount: 14.99,
+    status: 'completed',
+  },
+  {
+    id: '#ORD-005',
+    customer: 'Charlie Wilson',
+    product: 'Wrench Set',
+    amount: 39.99,
+    status: 'shipped',
+  },
 ];
 
 function badgeClasses(status) {
@@ -17,7 +50,34 @@ function badgeClasses(status) {
   return 'bg-gray-100 text-gray-700';
 }
 
-export default function RecentOrders({ orders = DEFAULT_ORDERS }) {
+export default function RecentOrders({ orders: initialOrders = null }) {
+  const [orders, setOrders] = useState(initialOrders || DEFAULT_ORDERS);
+
+  useEffect(() => {
+    if (initialOrders) return; // parent provided orders
+
+    const fetchOrders = async () => {
+      try {
+        const q = query(collection(db, 'orders'), orderBy('createdAt', 'desc'));
+        const snap = await getDocs(q);
+        const fetched = snap.docs.slice(0, 5).map((doc) => {
+          const data = doc.data();
+          return {
+            id: data.orderNumber || `#${doc.id.slice(0, 6)}`,
+            customer: data.customerName || data.customer?.name || 'Customer',
+            amount: data.total || data.amount || 0,
+            status: data.status || 'processing',
+          };
+        });
+        if (fetched.length) setOrders(fetched);
+      } catch (err) {
+        console.error('Error fetching recent orders', err);
+      }
+    };
+
+    fetchOrders();
+  }, [initialOrders]);
+
   return (
     <div className="bg-white border border-orange-100 rounded-xl shadow-lg">
       <div className="p-5 border-b border-orange-100 flex items-center justify-between">
@@ -36,12 +96,18 @@ export default function RecentOrders({ orders = DEFAULT_ORDERS }) {
             className="flex items-center justify-between p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-all border border-orange-100"
           >
             <div className="flex-1">
-              <div className="font-semibold text-gray-900 text-sm">{order.id}</div>
+              <div className="font-semibold text-gray-900 text-sm">
+                {order.id}
+              </div>
               <div className="text-xs text-gray-600">{order.customer}</div>
             </div>
             <div className="text-right">
               <div className="font-bold text-gray-900">${order.amount}</div>
-              <span className={`inline-block mt-1 px-2 py-1 rounded text-xs font-medium ${badgeClasses(order.status)}`}>
+              <span
+                className={`inline-block mt-1 px-2 py-1 rounded text-xs font-medium ${badgeClasses(
+                  order.status
+                )}`}
+              >
                 {order.status}
               </span>
             </div>

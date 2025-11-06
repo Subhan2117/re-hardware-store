@@ -11,6 +11,7 @@ import {
   X,
   Bookmark,
   Menu,
+  Store,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -30,6 +31,7 @@ const SIDEBAR_ITEMS = [
     icon: FolderTree,
     href: '/admin/categories',
   },
+  { id: 'store', label: 'Visit Store', icon: Store, href: '/store' },
 
   {
     id: 'settings',

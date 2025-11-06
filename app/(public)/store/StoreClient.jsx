@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import useCatalogFilters from '@/app/hooks/useCatalogFilters';
 import ProductCard from '@/app/component/ProductCard';
 import { useCart } from '@/app/context/CartContext';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
 export default function StoreClient({
@@ -22,13 +22,13 @@ export default function StoreClient({
     const fetchProducts = async () => {
       try {
         const snapshot = await getDocs(collection(db, 'products'));
-        const data = snapshot.docs.map(doc => ({
+        const data = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setProducts(data)
+        setProducts(data);
       } catch (error) {
-        console.error("Error fetching products:", error)
+        console.error('Error fetching products:', error);
       }
     };
 
@@ -156,9 +156,11 @@ export default function StoreClient({
           </div>
 
           {/* Active Filters */}
-         <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-  <div className="flex items-center gap-2 flex-wrap">
-    <span className="font-semibold text-gray-700">Active Filters:</span>
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-gray-700">
+                Active Filters:
+              </span>
 
               <div>
                 {selectedCategory !== 'all' && (
@@ -239,14 +241,13 @@ export default function StoreClient({
             {filtered.map((p) => (
               <div key={p.id} className="relative h-full group">
                 {/* Overlay link makes the *card* clickable but not the controls */}
-   
+
                 <ProductCard
                   product={p}
                   onAddToCart={() => addToCart(p)}
                   cartQuantity={cart[p.id] || 0}
                   // Make sure the card itself stretches to equal the grid row height:
                   className="h-full"
-
                 />
               </div>
             ))}

@@ -1,27 +1,36 @@
 'use client';
 
-import { DollarSign, ArrowUpRight, ShoppingCart, Package, FolderTree } from 'lucide-react';
-import { db } from '@/api/firebase/firebase';
+import {
+  DollarSign,
+  ArrowUpRight,
+  ShoppingCart,
+  Package,
+  FolderTree,
+} from 'lucide-react';
+import { db } from '@/app/api/firebase/firebase';
 import { collection, count, getAggregateFromServer } from 'firebase/firestore';
 
+const DEFAULT_STATS = {
+  revenue: 42350,
+  orders: 1234,
+  products: 249,
+  categories: 12,
+};
 
-const DEFAULT_STATS = { revenue: 42350, orders: 1234, products: 249, categories: 12 };
-
-const productsRef = collection(db, "products");
+const productsRef = collection(db, 'products');
 const productsSnapshot = await getAggregateFromServer(productsRef, {
   countAlias: count(),
 });
 
-const ordersRef = collection(db, "orders");
+const ordersRef = collection(db, 'orders');
 const ordersSnapshot = await getAggregateFromServer(ordersRef, {
   countAlias: count(),
 });
 
-const categoryRef = collection(db, "categories");
+const categoryRef = collection(db, 'categories');
 const categorySnap = await getAggregateFromServer(categoryRef, {
   countAlias: count(),
 });
-
 
 function StatCard({ title, value, icon: Icon, accentClass, subtext }) {
   return (
@@ -29,7 +38,9 @@ function StatCard({ title, value, icon: Icon, accentClass, subtext }) {
       <div className="p-5 border-b border-orange-100">
         <div className="flex items-center justify-between">
           <div className="text-sm font-medium text-gray-600">{title}</div>
-          <div className={`w-10 h-10 rounded-full ${accentClass} flex items-center justify-center`}>
+          <div
+            className={`w-10 h-10 rounded-full ${accentClass} flex items-center justify-center`}
+          >
             <Icon className="w-5 h-5 text-white" />
           </div>
         </div>
@@ -54,28 +65,48 @@ export default function StatCards({ stats = DEFAULT_STATS }) {
         value={`$${stats.revenue.toLocaleString()}`}
         icon={DollarSign}
         accentClass="bg-gradient-to-br from-orange-400 to-amber-500"
-        subtext={<><span className="font-semibold">+12.5%</span><span className="text-gray-500 ml-1">vs last month</span></>}
+        subtext={
+          <>
+            <span className="font-semibold">+12.5%</span>
+            <span className="text-gray-500 ml-1">vs last month</span>
+          </>
+        }
       />
       <StatCard
         title="Total Orders"
         value={ordersSnapshot.data().countAlias}
         icon={ShoppingCart}
         accentClass="bg-gradient-to-br from-blue-400 to-blue-600"
-        subtext={<><span className="font-semibold">+8.2%</span><span className="text-gray-500 ml-1">vs last month</span></>}
+        subtext={
+          <>
+            <span className="font-semibold">+8.2%</span>
+            <span className="text-gray-500 ml-1">vs last month</span>
+          </>
+        }
       />
       <StatCard
         title="Total Products"
         value={productsSnapshot.data().countAlias}
         icon={Package}
         accentClass="bg-gradient-to-br from-purple-400 to-purple-600"
-        subtext={<><span className="font-semibold">+3.1%</span><span className="text-gray-500 ml-1">vs last month</span></>}
+        subtext={
+          <>
+            <span className="font-semibold">+3.1%</span>
+            <span className="text-gray-500 ml-1">vs last month</span>
+          </>
+        }
       />
       <StatCard
         title="Categories"
         value={categorySnap.data().countAlias}
         icon={FolderTree}
         accentClass="bg-gradient-to-br from-green-400 to-green-600"
-        subtext={<><span className="font-semibold text-gray-700">Active</span><span className="text-gray-500 ml-1">categories</span></>}
+        subtext={
+          <>
+            <span className="font-semibold text-gray-700">Active</span>
+            <span className="text-gray-500 ml-1">categories</span>
+          </>
+        }
       />
     </div>
   );
