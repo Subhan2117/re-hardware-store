@@ -1,3 +1,5 @@
+import { ToastProvider } from '../hooks/useToast';
+
 // app/(admin)/layout.jsx
 export default function ProtectedLayout({ children }) {
   // Keep this minimal; don’t import client-only stuff here.

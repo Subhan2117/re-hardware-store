@@ -1,13 +1,12 @@
 'use client';
-import Navbar from "@/app/component/Navbar";
-import { useMemo } from "react";
-import { calculateTotals } from "@/app/(public)/cart/page";
-import { useCart } from "@/app/context/CartContext";
-import { mockProducts } from "@/app/mock-data/mockProducts.jsx";
+import Navbar from '@/app/component/Navbar';
+import { useMemo } from 'react';
+import { calculateTotals } from '@/app/(public)/cart/page';
+import { useCart } from '@/app/context/CartContext';
+import { mockProducts } from '@/app/mock-data/mockProducts.jsx';
 
 export default function CheckoutClient() {
-
-  // BELOW IS NEEDED TO CALCULATE ITEM COST AGAIN 
+  // BELOW IS NEEDED TO CALCULATE ITEM COST AGAIN
   const { cart } = useCart();
 
   const productById = useMemo(() => {
@@ -28,7 +27,6 @@ export default function CheckoutClient() {
 
   const { subtotal, shipping, tax, total } = calculateTotals(items);
 
-
   return (
     <div>
       <Navbar />
@@ -43,12 +41,9 @@ export default function CheckoutClient() {
           color: 'black',
         }}
       >
-       
         <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
-          
           {/* LEFT COLUMN: your three sections (unchanged content) */}
           <div className="grid gap-6">
-
             {/* 1. FIRST NAME FORM */}
             <section className="rounded-2xl border bg-white/80 shadow-sm backdrop-blur p-5 md:p-6">
               <header className="mb-4 flex items-start gap-3">
@@ -66,7 +61,10 @@ export default function CheckoutClient() {
               <div className="grid gap-4">
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="grid gap-1.5">
-                    <label htmlFor="firstName" className="text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="firstName"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       First Name
                     </label>
                     <input
@@ -80,7 +78,10 @@ export default function CheckoutClient() {
 
                   {/*LAST NAME*/}
                   <div className="grid gap-1.5">
-                    <label htmlFor="lastName" className="text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="lastName"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       Last Name
                     </label>
                     <input
@@ -94,7 +95,10 @@ export default function CheckoutClient() {
                 </div>
 
                 <div className="grid gap-1.5">
-                  <label htmlFor="email" className="text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="email"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Email Address
                   </label>
                   <input
@@ -109,7 +113,10 @@ export default function CheckoutClient() {
                 </div>
 
                 <div className="grid gap-1.5">
-                  <label htmlFor="phone" className="text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="phone"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Phone Number
                   </label>
                   <input
@@ -141,7 +148,10 @@ export default function CheckoutClient() {
 
               <div className="grid gap-4">
                 <div className="grid gap-1.5">
-                  <label htmlFor="street" className="text-sm font-medium text-slate-700">
+                  <label
+                    htmlFor="street"
+                    className="text-sm font-medium text-slate-700"
+                  >
                     Street Address
                   </label>
                   <input
@@ -155,7 +165,10 @@ export default function CheckoutClient() {
 
                 <div className="grid gap-4 md:grid-cols-3">
                   <div className="grid gap-1.5">
-                    <label htmlFor="city" className="text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="city"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       City
                     </label>
                     <input
@@ -168,7 +181,10 @@ export default function CheckoutClient() {
                   </div>
 
                   <div className="grid gap-1.5">
-                    <label htmlFor="state" className="text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="state"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       State
                     </label>
                     <input
@@ -181,7 +197,10 @@ export default function CheckoutClient() {
                   </div>
 
                   <div className="grid gap-1.5">
-                    <label htmlFor="zip" className="text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="zip"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       ZIP Code
                     </label>
                     <input
@@ -206,16 +225,17 @@ export default function CheckoutClient() {
                 </span>
                 <div>
                   <h2 className="text-lg font-semibold">Payment Details</h2>
-                  <p className="text-sm text-slate-500">
-                    Card Information
-                  </p>
+                  <p className="text-sm text-slate-500">Card Information</p>
                 </div>
               </header>
 
               <div className="grid gap-4">
                 <div className="grid gap-1.5">
-                  <label htmlFor="street" className="text-sm font-medium text-slate-700">
-                    Card Number 
+                  <label
+                    htmlFor="street"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Card Number
                   </label>
                   <input
                     id="Card Number"
@@ -227,8 +247,11 @@ export default function CheckoutClient() {
                 </div>
 
                 <div className="grid gap-1.5">
-                  <label htmlFor="street" className="text-sm font-medium text-slate-700">
-                    Card Name Holder 
+                  <label
+                    htmlFor="street"
+                    className="text-sm font-medium text-slate-700"
+                  >
+                    Card Name Holder
                   </label>
                   <input
                     id="Card Holder Name"
@@ -241,7 +264,10 @@ export default function CheckoutClient() {
 
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="grid gap-1.5">
-                    <label htmlFor="city" className="text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="city"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       Expire Date
                     </label>
                     <input
@@ -255,7 +281,10 @@ export default function CheckoutClient() {
                   </div>
 
                   <div className="grid gap-1.5">
-                    <label htmlFor="zip" className="text-sm font-medium text-slate-700">
+                    <label
+                      htmlFor="zip"
+                      className="text-sm font-medium text-slate-700"
+                    >
                       CCV
                     </label>
                     <input
@@ -300,7 +329,6 @@ export default function CheckoutClient() {
               <span>${total.toFixed(2)}</span>
             </div>
 
-
             <ul className="mt-4 space-y-2 text-xs text-slate-600">
               <li className="flex items-center gap-2">
                 <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-600"></span>
@@ -316,11 +344,13 @@ export default function CheckoutClient() {
               </li>
             </ul>
 
-            <button type="button" className="mt-6 w-full rounded-xl bg-orange-600 px-5 py-3 text-white font-semibold shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-400">
+            <button
+              type="button"
+              className="mt-6 w-full rounded-xl bg-orange-600 px-5 py-3 text-white font-semibold shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+            >
               Place Order
             </button>
           </aside>
-
         </div>
       </main>
     </div>
