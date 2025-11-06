@@ -17,6 +17,7 @@ const toRad = (deg) => (deg * Math.PI) / 180;
 export default function CategoryDistribution({ data: initialData = null }) {
   const [data, setData] = useState(initialData || DEFAULT_CATEGORIES);
   const fills = ['#f97316', '#3b82f6', '#a855f7', '#10b981'];
+  const lightingFill = '#fbbf24'; // yellow for Lighting category
 
   const radius = 40;
   const cx = 50;
@@ -92,11 +93,13 @@ export default function CategoryDistribution({ data: initialData = null }) {
                   round(cy + radius * Math.sin(toRad(endAngle))),
                 ];
 
+                const isLighting = String(category.name || '').toLowerCase().trim() === 'lighting';
+                const sliceFill = isLighting ? lightingFill : fills[index % fills.length];
                 acc.push(
                   <path
                     key={index}
                     d={`M ${cx} ${cy} L ${sx} ${sy} A ${radius} ${radius} 0 ${largeArc} 1 ${ex} ${ey} Z`}
-                    style={{ fill: fills[index % fills.length] }}
+                    style={{ fill: sliceFill }}
                   />
                 );
                 return acc;
@@ -111,7 +114,7 @@ export default function CategoryDistribution({ data: initialData = null }) {
               <div className="flex items-center gap-3">
                 <div
                   className="w-4 h-4 rounded-full"
-                  style={{ background: fills[index % fills.length] }}
+                  style={{ background: String(category.name || '').toLowerCase().trim() === 'lighting' ? lightingFill : fills[index % fills.length] }}
                 />
                 <span className="text-sm font-medium text-gray-900">
                   {category.name}
