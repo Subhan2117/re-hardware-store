@@ -238,7 +238,7 @@ export default function Page() {
                     </span>
                   </div>
                 </div>
-                <Link href={'/user/checkout'}>
+                <Link href={'/checkout'}>
                   <button className="w-full mb-5 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-3 text-white font-semibold hover:opacity-90 active:opacity-80 transition">
                     Proceed to Checkout
                   </button>
