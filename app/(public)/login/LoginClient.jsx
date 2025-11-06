@@ -2,19 +2,32 @@
 
 import Link from 'next/link';
 import { Eye, EyeOff, Lock, Loader2 } from 'lucide-react';
+import { useState } from 'react';
 import useLogin from '@/app/hooks/useLogin.jsx';
 
 export default function LoginClient() {
   const {
-    email, setEmail,
-    password, setPassword,
-    showPassword, setShowPassword,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    showPassword,
+    setShowPassword,
     error,
     isEmailLoading,
     isGoogleLoading,
     onEmailSubmit,
     onGoogleSignIn,
   } = useLogin();
+
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await onEmailSubmit({
+      mode: isAdmin ? 'admin' : 'user',
+    });
+  };
 
   return (
     <div>
@@ -32,7 +45,11 @@ export default function LoginClient() {
           className="border border-gray-300 mb-5 w-full py-2 rounded-2xl bg-gray-100 shadow-sm
                      hover:bg-gray-200 hover:-translate-y-0.5 active:translate-y-0 transition
                      disabled:opacity-60 disabled:cursor-not-allowed"
-          onClick={onGoogleSignIn}
+          onClick={() =>
+            onGoogleSignIn({
+              mode: isAdmin ? 'admin' : 'user',
+            })
+          }
           disabled={isGoogleLoading || isEmailLoading}
           aria-busy={isGoogleLoading}
         >
@@ -53,10 +70,41 @@ export default function LoginClient() {
         </div>
       )}
 
-      <form onSubmit={onEmailSubmit} className="space-y-6 max-w-md mx-auto">
+      <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
+        {/* User/Admin Toggle (Two-button style) */}
+        <div className="flex justify-center mb-4">
+          <div className="flex w-[220px] bg-gray-100 rounded-full p-1 shadow-inner">
+            <button
+              type="button"
+              onClick={() => setIsAdmin(false)}
+              className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                !isAdmin
+                  ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-orange-600'
+              }`}
+            >
+              User
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsAdmin(true)}
+              className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
+                isAdmin
+                  ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md'
+                  : 'text-gray-600 hover:text-orange-600'
+              }`}
+            >
+              Admin
+            </button>
+          </div>
+        </div>
+
         {/* Email */}
         <div className="flex flex-col">
-          <label htmlFor="email" className="mb-2 text-sm font-semibold text-slate-700">
+          <label
+            htmlFor="email"
+            className="mb-2 text-sm font-semibold text-slate-700"
+          >
             Email
           </label>
           <input
@@ -73,7 +121,10 @@ export default function LoginClient() {
 
         {/* Password */}
         <div className="flex flex-col">
-          <label htmlFor="password" className="mb-2 text-sm font-semibold text-slate-700">
+          <label
+            htmlFor="password"
+            className="mb-2 text-sm font-semibold text-slate-700"
+          >
             Password
           </label>
           <div className="relative">
@@ -137,6 +188,8 @@ export default function LoginClient() {
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Signing in…
               </span>
+            ) : isAdmin ? (
+              'Sign In as Admin'
             ) : (
               'Sign In'
             )}

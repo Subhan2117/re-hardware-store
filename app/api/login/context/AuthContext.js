@@ -6,7 +6,6 @@ import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
-  signInWithPopup,
 } from 'firebase/auth';
 
 const AuthContext = createContext();
@@ -14,6 +13,12 @@ const AuthContext = createContext();
 export function useAuth() {
   return useContext(AuthContext);
 }
+function clearRoleCookies() {
+  if (typeof document === 'undefined') return;
+  document.cookie = 'logged_in=; path=/; max-age=0; path=/';
+  document.cookie = 'role=; path=/; max-age=0; path=/';
+}
+
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
@@ -31,11 +36,15 @@ export function AuthProvider({ children }) {
   const signInWithGoogle = () => {
     return googleAuth();
   };
+  const logout = async () => {
+    await signOut(auth);
+    clearRoleCookies();
+  };
 
   const value = {
     currentUser,
     login,
-    logout: () => signOut(auth),
+    logout,
     signInWithGoogle,
   };
 

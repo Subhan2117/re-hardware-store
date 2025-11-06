@@ -15,8 +15,7 @@ import {
 } from 'lucide-react';
 import { useCart } from '@/app/context/CartContext';
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/api/firebase/firebase';
-
+import { db } from '@/app/api/firebase/firebase';
 
 export default function ProductDetailsClient({ productId }) {
   const router = useRouter();
@@ -101,12 +100,16 @@ export default function ProductDetailsClient({ productId }) {
   }, [inStock, maxAddable, quantity, router, setCart, product, stock]);
 
   if (!product) {
-    return(
+    return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center px-6">
-        <h1 className="text-3xl font-bold text-slate-800 mb-4">Product not found</h1>
-        <p className="text-slate-600">We couldn't find the product you're looking for.</p>
-      </div> 
-    )
+        <h1 className="text-3xl font-bold text-slate-800 mb-4">
+          Product not found
+        </h1>
+        <p className="text-slate-600">
+          We couldn't find the product you're looking for.
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -122,7 +125,7 @@ export default function ProductDetailsClient({ productId }) {
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
-              fetchPriority="high" 
+              fetchPriority="high"
             />
           </div>
         </div>

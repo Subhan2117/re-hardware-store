@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
 export default function OrdersPage() {
@@ -14,34 +14,41 @@ export default function OrdersPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Fetch products
         const productSnapshot = await getDocs(collection(db, 'products'));
-        const productList = productSnapshot.docs.map(doc => ({
+        const productList = productSnapshot.docs.map((doc) => ({
           id: doc.id,
           name: doc.data().name,
-          price: doc.data().price || 0, // include price
+          price: doc.data().price || 0,
         }));
         setProducts(productList);
 
-        // Fetch orders
         const orderSnapshot = await getDocs(collection(db, 'orders'));
-        const ordersList = orderSnapshot.docs.map(doc => ({
+        const ordersList = orderSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
 
-        // Map product IDs to names and prices
-        const ordersWithNames = ordersList.map(order => ({
-          ...order,
-          products: order.products.map(p => {
-            const product = productList.find(prod => prod.id === p.productId);
+        const ordersWithNames = ordersList.map((order) => {
+          const productsWithNames = order.products.map((p) => {
+            const product = productList.find((prod) => prod.id === p.productId);
             return {
               ...p,
               name: product ? product.name : `Unknown (${p.productId})`,
               price: product ? product.price : 0,
             };
-          }),
-        }));
+          });
+
+          const total = productsWithNames.reduce(
+            (sum, p) => sum + (p.price * (p.quantity || 0)),
+            0
+          );
+
+          return {
+            ...order,
+            products: productsWithNames,
+            total,
+          };
+        });
 
         setOrders(ordersWithNames);
       } catch (error) {
@@ -54,16 +61,24 @@ export default function OrdersPage() {
     fetchData();
   }, []);
 
-  // Filtering and searching
   const filteredOrders = useMemo(() => {
     let filtered = orders;
 
-    if (filter === 'priority') filtered = filtered.filter(o => o.status === 'In Transit');
-    if (filter === 'recent') filtered = [...filtered].sort((a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate));
+    if (filter === 'priority')
+      filtered = filtered.filter((o) => o.status === 'In Transit');
+    if (filter === 'recent')
+      filtered = [...filtered].sort(
+        (a, b) => new Date(b.lastUpdate) - new Date(a.lastUpdate)
+      );
 
     if (searchTerm.trim() !== '') {
-      filtered = filtered.filter(order => {
-        const text = order.trackingNumber + ' ' + order.status + ' ' + order.products.map(p => p.name).join(' ');
+      filtered = filtered.filter((order) => {
+        const text =
+          order.trackingNumber +
+          ' ' +
+          order.status +
+          ' ' +
+          order.products.map((p) => p.name).join(' ');
         return text.toLowerCase().includes(searchTerm.toLowerCase());
       });
     }
@@ -74,24 +89,21 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white">
       <div className="mx-auto max-w-7xl px-4 py-10">
-        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold tracking-tight">Orders</h1>
           <p className="mt-1 text-sm text-gray-500">All orders from Firebase</p>
         </div>
 
-        {/* Search Bar */}
         <div className="mb-4">
           <input
             type="text"
             className="w-full px-4 py-2 border rounded-lg"
             placeholder="Search by tracking number, status, or product"
             value={searchTerm}
-            onChange={e => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
-        {/* Filter Buttons */}
         <div className="flex gap-3 mb-6">
           <button
             className={`px-4 py-2 rounded-lg border ${
@@ -127,7 +139,6 @@ export default function OrdersPage() {
           </button>
         </div>
 
-        {/* Orders Table */}
         <div className="overflow-hidden rounded-lg border border-gray-300 bg-white shadow-sm">
           <table className="w-full text-left">
             <thead className="bg-gray-100 border-b">
@@ -135,7 +146,7 @@ export default function OrdersPage() {
                 <th className="px-6 py-3">Tracking #</th>
                 <th className="px-6 py-3">Products</th>
                 <th className="px-6 py-3">Quantities</th>
-                <th className="px-6 py-3">Order Total</th>
+                <th className="px-6 py-3">Total ($)</th>
                 <th className="px-6 py-3">Status</th>
                 <th className="px-6 py-3">Estimated Delivery</th>
                 <th className="px-6 py-3">Last Update</th>
@@ -156,25 +167,23 @@ export default function OrdersPage() {
                   </td>
                 </tr>
               ) : (
-                filteredOrders.map(order => {
-                  //Calculates total
-                  const total = order.products.reduce(
-                    (sum, p) => sum + (p.price || 0) * (p.quantity || 0),
-                    0
-                  );
-
-                  return (
-                    <tr key={order.id} className="border-b hover:bg-gray-50">
-                      <td className="px-6 py-4">{order.trackingNumber}</td>
-                      <td className="px-6 py-4">{order.products.map(p => p.name).join(', ')}</td>
-                      <td className="px-6 py-4">{order.products.map(p => p.quantity).join(', ')}</td>
-                      <td className="px-6 py-4">${total.toFixed(2)}</td>
-                      <td className="px-6 py-4">{order.status}</td>
-                      <td className="px-6 py-4">{order.estimatedDelivery}</td>
-                      <td className="px-6 py-4">{order.lastUpdate}</td>
-                    </tr>
-                  );
-                })
+                filteredOrders.map((order) => (
+                  <tr key={order.id} className="border-b hover:bg-gray-50">
+                    <td className="px-6 py-4">{order.trackingNumber}</td>
+                    <td className="px-6 py-4">
+                      {order.products.map((p) => p.name).join(', ')}
+                    </td>
+                    <td className="px-6 py-4">
+                      {order.products.map((p) => p.quantity).join(', ')}
+                    </td>
+                    <td className="px-6 py-4 font-medium text-gray-800">
+                      ${order.total.toFixed(2)}
+                    </td>
+                    <td className="px-6 py-4">{order.status}</td>
+                    <td className="px-6 py-4">{order.estimatedDelivery}</td>
+                    <td className="px-6 py-4">{order.lastUpdate}</td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

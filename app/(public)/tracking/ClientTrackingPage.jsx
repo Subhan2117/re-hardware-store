@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { mockOrders } from '@/app/mock-data/mockOrders';
-import { db } from '@/api/firebase/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { db } from '@/app/api/firebase/firebase';
 
+import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 
 export default function ClientTrackingPage() {
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -13,7 +13,6 @@ export default function ClientTrackingPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [products, setProducts] = useState([]);
-
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -25,13 +24,12 @@ export default function ClientTrackingPage() {
         }));
         setProducts(productList);
       } catch (error) {
-        console.error('Error fetching products:', error)
+        console.error('Error fetching products:', error);
       }
     };
 
     fetchProducts();
   }, []);
-
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -41,26 +39,49 @@ export default function ClientTrackingPage() {
     setNotFound(false);
     setSearchedOrder(null);
 
-    await new Promise((resolve) => setTimeout(resolve, 400)); // simulate delay
+    try {
+      const ordersSnapshot = await getDocs(collection(db, 'orders'));
+      const orderDoc = ordersSnapshot.docs.find(
+        (d) =>
+          d.data().trackingNumber?.toLowerCase() ===
+          trackingNumber.toLowerCase()
+      );
 
-    const order = mockOrders.find(
-      (o) => o.orderId.toLowerCase() === trackingNumber.toLowerCase()
-    );
+      if (!orderDoc) {
+        setNotFound(true);
+        setIsSearching(false);
+        return;
+      }
+      const orderData = orderDoc.data();
 
-    if (!order) {
+      const productPromises = (orderData.products ?? []).map(async (item) => {
+        const productRef = doc(db, 'products', item.productId);
+        const productSnap = await getDoc(productRef);
+
+        if (productSnap.exists()) {
+          return {
+            id: productSnap.id,
+            quantity: item.quantity,
+            ...productSnap.data(),
+          };
+        } else {
+          return null;
+        }
+      });
+
+      const productsInOrder = (await Promise.all(productPromises)).filter(
+        Boolean
+      );
+
+      setSearchedOrder({
+        ...orderData,
+        products: productsInOrder,
+      });
+    } catch (err) {
+      console.error('Error fetching order data:', err);
       setNotFound(true);
       setSearchedOrder(null);
     }
-    else{
-      const product = products.find((p) => p.id === order.productId);
-      if (!product) {
-        setNotFound(true);
-      } else {
-        setSearchedOrder({ ...order, ...product });
-      }
-    }
-
-
 
     setIsSearching(false);
   };
@@ -94,36 +115,50 @@ export default function ClientTrackingPage() {
         </form>
       </div>
 
-      {/* Search Result */}
       {searchedOrder && (
-        <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 flex items-center gap-6">
-          <img
-            src={searchedOrder.image}
-            alt={searchedOrder.name}
-            className="w-28 h-28 object-cover rounded-md border"
-          />
+        <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 space-y-6">
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">
-              {searchedOrder.name}
+              Order #{searchedOrder.orderId}
             </h2>
-            <p className="text-gray-700 mt-1">{searchedOrder.description}</p>
-            <p className="mt-2 font-semibold text-gray-900">
-              ${searchedOrder.price}
-            </p>
             <p
               className={`mt-1 font-semibold ${
-                searchedOrder.status === 'in_transit'
-                  ? 'text-green-600'
-                  : searchedOrder.status === 'out_for_delivery'
+                searchedOrder.status === 'In Transit'
                   ? 'text-blue-600'
+                  : searchedOrder.status === 'Out for Delivery'
+                  ? 'text-yellow-600'
+                  : searchedOrder.status == 'Delivered'
+                  ? 'text-yellow-600'
                   : 'text-red-600'
               }`}
             >
-              {searchedOrder.status.replace('_', ' ')}
+              {searchedOrder.status}
             </p>
             <p className="text-gray-600 mt-1 text-sm">
               Estimated Delivery: {searchedOrder.estimatedDelivery}
             </p>
+          </div>
+
+          <div className="space-y-4">
+            {searchedOrder.products.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center gap-4 border-t pt-4 first:border-t-0 first:pt-0"
+              >
+                <img
+                  src={p.image}
+                  alt={p.name}
+                  className="w-24 h-24 object-cover rounded-md border"
+                />
+                <div>
+                  <h3 className="text-lg font-semibold">{p.name}</h3>
+                  <p className="text-gray-700 text-sm">{p.description}</p>
+                  <p className="text-gray-900 font-semibold mt-1">
+                    ${p.price} x {p.quantity}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       )}

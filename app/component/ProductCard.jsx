@@ -10,7 +10,7 @@ export default function ProductCard({
   cartQuantity,
   className,
 }) {
-  const imgSrc = product.image || '/hammer.jpg';
+  const imgSrc = product.image || '/file.svg';
   const handleAdd = (e) => {
     e.stopPropagation(); // don't bubble to overlay link
     e.preventDefault(); // don't trigger navigation
