@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Mail, Lock, LogOut } from 'lucide-react';
-import { auth } from '@/api/firebase/firebase';
+import { Mail, Lock, LogOut, Pencil } from 'lucide-react';
+import { auth } from '@/app/api/firebase/firebase';
 import {
   updateEmail,
   updatePassword,
@@ -15,8 +15,13 @@ import {
 export default function AdminSettings() {
   const [adminName, setAdminName] = useState('');
   const [currentEmail, setCurrentEmail] = useState('');
+
+  // Email edit
+  const [showEmailForm, setShowEmailForm] = useState(false);
   const [newEmail, setNewEmail] = useState('');
 
+  // Password edit
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -35,46 +40,37 @@ export default function AdminSettings() {
   const reauthenticate = async () => {
     const user = auth.currentUser;
     if (!user) throw new Error("No authenticated user");
-
     const credential = EmailAuthProvider.credential(user.email, currentPassword);
     return reauthenticateWithCredential(user, credential);
   };
 
   const handleChangeEmail = async (e) => {
     e.preventDefault();
-    
     try {
       await reauthenticate();
       await updateEmail(auth.currentUser, newEmail);
-
       setCurrentEmail(newEmail);
       setNewEmail('');
-      alert('Email updated successfully');
+      setShowEmailForm(false);
+      alert('Email updated successfully!');
     } catch (err) {
-      console.error(err);
-      alert(err.message || "Failed to update email");
+      alert(err.message);
     }
   };
 
   const handleChangePassword = async (e) => {
     e.preventDefault();
-
-    if (!currentPassword || !newPassword || !confirmPassword) {
-      alert('Please fill out all password fields.');
-      return;
-    }
-
+    if (newPassword !== confirmPassword) return alert("Passwords do not match");
     try {
       await reauthenticate();
       await updatePassword(auth.currentUser, newPassword);
-
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      alert("Password updated successfully!");
+      setShowPasswordForm(false);
+      alert("Password updated!");
     } catch (err) {
-      console.error(err);
-      alert(err.message || "Failed to update password");
+      alert(err.message);
     }
   };
 
@@ -85,102 +81,102 @@ export default function AdminSettings() {
 
   return (
     <div className="min-h-screen bg-orange-50 p-8">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-3xl space-y-8">
+
         {/* Header */}
-        <div className="mb-12 text-center">
+        <div className="text-center">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Admin Settings</h1>
-          <p className="text-gray-600 text-lg">
-            Logged in as: <span className="font-medium">{adminName}</span>
-          </p>
+          <p className="text-gray-600 text-lg">Logged in as: <span className="font-medium">{adminName}</span></p>
         </div>
 
-        <div className="space-y-8">
-          {/* Admin Info */}
-          <section className="bg-white shadow-md rounded-2xl p-8 border border-gray-200">
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">Admin Info</h2>
-            <p className="text-gray-500">Current Email:</p>
-            <p className="font-medium text-gray-700">{currentEmail}</p>
-          </section>
+        {/* Admin Info */}
+        <section className="bg-white shadow-md rounded-2xl p-8 border">
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Account Info</h2>
 
-          {/* Change Email */}
-          <section className="bg-white shadow-md rounded-2xl p-8 border border-gray-200">
-            <div className="flex items-center gap-3 mb-6">
-              <Mail className="h-6 w-6 text-orange-500" />
-              <h2 className="text-2xl font-semibold text-gray-800">Change Email</h2>
+          <div className="flex justify-between items-center">
+            <div>
+              <p className="text-gray-500">Email:</p>
+              <p className="font-medium text-gray-700">{currentEmail}</p>
             </div>
-            <form onSubmit={handleChangeEmail} className="space-y-4">
-              <input
-                type="email"
-                placeholder="Enter new email"
-                value={newEmail}
-                onChange={(e) => setNewEmail(e.target.value)}
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                required
-              />
-              <button
-                type="submit"
-                className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium"
-              >
-                Update Email
-              </button>
-            </form>
-          </section>
-
-          {/* Change Password */}
-          <section className="bg-white shadow-md rounded-2xl p-8 border border-gray-200">
-            <div className="flex items-center gap-3 mb-6">
-              <Lock className="h-6 w-6 text-orange-500" />
-              <h2 className="text-2xl font-semibold text-gray-800">Change Password</h2>
-            </div>
-            <form onSubmit={handleChangePassword} className="space-y-4">
-              <input
-                type="password"
-                placeholder="Current password"
-                value={currentPassword}
-                onChange={(e) => setCurrentPassword(e.target.value)}
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                required
-              />
-              <input
-                type="password"
-                placeholder="New password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                required
-              />
-              <input
-                type="password"
-                placeholder="Confirm new password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                className="w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none"
-                required
-              />
-              <button
-                type="submit"
-                className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium"
-              >
-                Update Password
-              </button>
-            </form>
-          </section>
-
-          {/* Logout */}
-          <section className="bg-white shadow-md rounded-2xl p-8 border border-orange-200">
-            <div className="flex items-center gap-3 mb-6">
-              <LogOut className="h-6 w-6 text-orange-500" />
-              <h2 className="text-2xl font-semibold text-orange-600">Logout</h2>
-            </div>
-            <p className="text-gray-500 mb-4">Sign out of your admin account.</p>
-            <button
-              onClick={handleLogout}
-              className="w-full px-4 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-medium"
+            <button 
+              className="text-orange-600 hover:text-orange-700 flex items-center gap-1"
+              onClick={() => setShowEmailForm(true)}
             >
-              Log Out
+              <Pencil size={16}/> Edit
             </button>
-          </section>
-        </div>
+          </div>
+        </section>
+
+        {/* Email Form */}
+        {showEmailForm && (
+          <form onSubmit={handleChangeEmail} className="bg-white shadow-md rounded-2xl p-6 border space-y-4">
+            <h3 className="text-lg font-semibold flex items-center gap-2"><Mail /> Update Email</h3>
+
+            <input
+              type="email"
+              placeholder="New Email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              className="w-full px-4 py-3 border rounded-lg"
+              required
+            />
+
+            <input
+              type="password"
+              placeholder="Current Password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              className="w-full px-4 py-3 border rounded-lg"
+              required
+            />
+
+            <div className="flex gap-3">
+              <button className="flex-1 bg-orange-500 text-white py-2 rounded-lg">Save</button>
+              <button type="button" onClick={() => setShowEmailForm(false)} className="flex-1 border py-2 rounded-lg">Cancel</button>
+            </div>
+          </form>
+        )}
+
+        {/* Password Section */}
+        <section className="bg-white shadow-md rounded-2xl p-8 border">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2"><Lock /> Password</h2>
+            <button 
+              className="text-orange-600 hover:text-orange-700 flex items-center gap-1"
+              onClick={() => setShowPasswordForm(true)}
+            >
+              <Pencil size={16}/> Edit
+            </button>
+          </div>
+        </section>
+
+        {/* Password Form */}
+        {showPasswordForm && (
+          <form onSubmit={handleChangePassword} className="bg-white shadow-md rounded-2xl p-6 border space-y-4">
+            <input type="password" placeholder="Current Password" className="w-full px-4 py-3 border rounded-lg"
+              value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
+
+            <input type="password" placeholder="New Password" className="w-full px-4 py-3 border rounded-lg"
+              value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
+
+            <input type="password" placeholder="Confirm Password" className="w-full px-4 py-3 border rounded-lg"
+              value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
+
+            <div className="flex gap-3">
+              <button className="flex-1 bg-orange-500 text-white py-2 rounded-lg">Save</button>
+              <button type="button" onClick={() => setShowPasswordForm(false)} className="flex-1 border py-2 rounded-lg">Cancel</button>
+            </div>
+          </form>
+        )}
+
+        {/* Logout */}
+        <section className="bg-white shadow-md rounded-2xl p-8 border border-orange-200 text-center">
+          <h2 className="text-xl font-semibold text-orange-600 flex items-center gap-2 justify-center"><LogOut /> Logout</h2>
+          <button onClick={handleLogout} className="mt-4 w-full bg-orange-500 text-white py-3 rounded-lg hover:bg-orange-600">
+            Log Out
+          </button>
+        </section>
+
       </div>
     </div>
   );
