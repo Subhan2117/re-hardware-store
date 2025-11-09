@@ -7,7 +7,7 @@ import ClientTrackingPage from './ClientTrackingPage';
 export default function Page() {
   return (
     <div className="flex flex-col min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200">
-      <Navbar />
+      
 
       {/* Header */}
       <div className="mt-20 text-center">

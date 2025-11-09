@@ -46,6 +46,15 @@ export default function Navbar() {
     } catch (e) {
       console.error('Logout failed', e);
     } finally {
+      // 🔹 Clear client-side cookies (defensive)
+      if (typeof document !== 'undefined') {
+        document.cookie = 'logged_in=; path=/; max-age=0';
+        document.cookie = 'role=; path=/; max-age=0';
+      }
+
+      // 🔹 Immediately drop role from state
+      setRole(null);
+
       setUserMenuOpen(false);
       router.push('/');
     }
@@ -76,7 +85,7 @@ export default function Navbar() {
                 {item.label}
               </Link>
             ))}
-            {role === 'admin' && (
+            {isLoggedIn && role === 'admin' && (
               <Link
                 href="/admin/dashboard"
                 className="text-slate-600 hover:text-amber-600 transition-all ease-in-out duration-300 font-medium px-4 py-2 rounded-lg hover:bg-white/30 hover:backdrop-blur-md"
@@ -145,11 +154,11 @@ export default function Navbar() {
                     >
                       My Orders
                     </Link>
-                    {role === 'admin' && (
+                    {isLoggedIn && role === 'admin' && (
                       <Link
                         href="/admin/dashboard"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 hover:bg-slate-50"
+                        onClick={() => setOpen(false)}
+                        className="block w-full text-left px-4 py-3 rounded-xl text-slate-700 font-medium hover:text-amber-700 hover:bg-white/60 transition"
                       >
                         Admin Portal
                       </Link>
@@ -160,6 +169,7 @@ export default function Navbar() {
                       className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600"
                     >
                       Sign Out
+                      
                     </button>
                   </div>
                 )}

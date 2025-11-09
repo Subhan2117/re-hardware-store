@@ -8,9 +8,8 @@ import {
   FolderTree,
 } from 'lucide-react';
 import { db } from '@/app/api/firebase/firebase';
-import { collection, count, getAggregateFromServer } from 'firebase/firestore';
+import { collection, getDocs, query, where, Timestamp } from 'firebase/firestore';
 import { useEffect, useState } from 'react';
-import { getDocs, query, where, Timestamp } from 'firebase/firestore';
 
 
 const DEFAULT_STATS = {
@@ -20,20 +19,9 @@ const DEFAULT_STATS = {
   categories: 12,
 };
 
-const productsRef = collection(db, 'products');
-const productsSnapshot = await getAggregateFromServer(productsRef, {
-  countAlias: count(),
-});
-
-const ordersRef = collection(db, 'orders');
-const ordersSnapshot = await getAggregateFromServer(ordersRef, {
-  countAlias: count(),
-});
-
-const categoryRef = collection(db, 'categories');
-const categorySnap = await getAggregateFromServer(categoryRef, {
-  countAlias: count(),
-});
+// Removed top-level Firestore aggregate calls to avoid running DB reads at module
+// evaluation time (this caused permission errors during dev). The component
+// now fetches counts inside useEffect and exposes them via state.
 
 function StatCard({ title, value, icon: Icon, accentClass, subtext }) {
   return (
@@ -174,21 +162,21 @@ export default function StatCards({ stats: initialStats = DEFAULT_STATS }) {
       />
       <StatCard
         title="Total Orders"
-        value={ordersSnapshot.data().countAlias}
+        value={stats.orders}
         icon={ShoppingCart}
         accentClass="bg-gradient-to-br from-blue-400 to-blue-600"
         subtext={<><span className="font-semibold">{formatPct(pcts.orders)}</span><span className="text-gray-500 ml-1">vs last month</span></>}
       />
       <StatCard
         title="Total Products"
-        value={productsSnapshot.data().countAlias}
+        value={stats.products}
         icon={Package}
         accentClass="bg-gradient-to-br from-purple-400 to-purple-600"
         subtext={<><span className="font-semibold">{formatPct(pcts.products)}</span><span className="text-gray-500 ml-1">vs last month</span></>}
       />
       <StatCard
         title="Categories"
-        value={categorySnap.data().countAlias}
+        value={stats.categories}
         icon={FolderTree}
         accentClass="bg-gradient-to-br from-green-400 to-green-600"
         subtext={

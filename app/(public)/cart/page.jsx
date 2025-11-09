@@ -65,7 +65,6 @@ export default function Page() {
 
   return (
     <div>
-      <Navbar />
       <main
         style={{
           backgroundColor: '#FAEBD7',
