@@ -33,14 +33,14 @@ const SIDEBAR_ITEMS = [
     icon: FolderTree,
     href: '/admin/categories',
   },
-  { id: 'store', label: 'Visit Store', icon: Store, href: '/store' },
 
   {
-    id: "users",
+    id: 'users',
     label: 'Users',
     icon: Users,
     href: '/admin/users',
   },
+  { id: 'store', label: 'Visit Store', icon: Store, href: '/store' },
 
   {
     id: 'settings',
@@ -55,8 +55,6 @@ const SIDEBAR_ITEMS = [
     icon: LogOut,
     href: '/admin/logout',
   },
-
-
 ];
 
 export default function AdminSidebar() {

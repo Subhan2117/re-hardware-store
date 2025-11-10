@@ -1,13 +1,21 @@
-'use client';
+ 'use client';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Edit, Trash2, MoreHorizontal } from 'lucide-react';
 import useProducts from '@/app/hooks/useProducts.jsx';
+import { deleteDoc, doc } from 'firebase/firestore';
+import { db } from '@/app/api/firebase/firebase';
 
 export default function ProductsTable({ searchQuery, category, stock, pageSize = 10 }) {
+  const router = useRouter();
+  const [reloadKey, setReloadKey] = useState(0);
+
   const { products, loading, page, loadNextPage, loadPrevPage } = useProducts({
     pageSize,
-    search: searchQuery,   // <-- already debounced by parent
-    category,              // "all" | "power-tools" | ...
-    stock,                 // "all" | "in-stock" | "low-stock" | "out-of-stock"
+    search: searchQuery, // <-- already debounced by parent
+    category, // "all" | "power-tools" | ...
+    stock, // "all" | "in-stock" | "low-stock" | "out-of-stock"
+    reloadKey,
   });
 
   const threadTable = ['Product', 'SKU', 'Category', 'Price', 'Stock', 'Status', 'Actions'];
@@ -96,13 +104,28 @@ export default function ProductsTable({ searchQuery, category, stock, pageSize =
                     <div className="flex items-center justify-end gap-2">
                       <button
                         className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-blue-600 hover:bg-blue-50"
-                        onClick={() => console.log('Edit', product.id)}
+                        onClick={() => router.push(`/admin/products/${product.id}/edit`)}
+                        title="Edit product"
                       >
                         <Edit className="w-4 h-4" /> Edit
                       </button>
                       <button
                         className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-sm text-red-600 hover:bg-red-50"
-                        onClick={() => console.log('Delete', product.id)}
+                        onClick={async () => {
+                          const ok = window.confirm(`Delete product "${product.name}"? This cannot be undone.`);
+                          if (!ok) return;
+                          try {
+                            await deleteDoc(doc(db, 'products', product.id));
+                            // trigger a reload of products
+                            setReloadKey((k) => k + 1);
+                            // small UX feedback
+                            window.alert('Product deleted');
+                          } catch (err) {
+                            console.error('Failed to delete product', err);
+                            window.alert('Failed to delete product. Check console for details.');
+                          }
+                        }}
+                        title="Delete product"
                       >
                         <Trash2 className="w-4 h-4" /> Delete
                       </button>
