@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState, useMemo } from 'react';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import {
   Wrench,
@@ -47,13 +47,13 @@ export default function CategoriesClient() {
     const fetchData = async () => {
       try {
         const catSnap = await getDocs(collection(db, 'categories'));
-        const categoryData = catSnap.docs.map(doc => ({
+        const categoryData = catSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
 
         const prodSnap = await getDocs(collection(db, 'products'));
-        const productData = prodSnap.docs.map(doc => ({
+        const productData = prodSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
@@ -69,8 +69,8 @@ export default function CategoriesClient() {
   }, []);
 
   const categoriesWithCounts = useMemo(() => {
-    return categories.map(cat => {
-      const count = products.filter(p => p.category === cat.name).length;
+    return categories.map((cat) => {
+      const count = products.filter((p) => p.category === cat.name).length;
       return {
         ...cat,
         count,
@@ -82,7 +82,7 @@ export default function CategoriesClient() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return categoriesWithCounts;
-    return categoriesWithCounts.filter(c => c.name.toLowerCase().includes(q));
+    return categoriesWithCounts.filter((c) => c.name.toLowerCase().includes(q));
   }, [categoriesWithCounts, query]);
 
   // static delete handler placeholder

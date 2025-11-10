@@ -1,63 +1,119 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/api/login/context/AuthContext';
-import { googleAuth } from '@/api/firebase/firebase';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@/app/api/login/context/AuthContext';
+import { db } from '@/app/api/firebase/firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export default function useLogin() {
   const router = useRouter();
-  const { login } = useAuth();
+  const sp = useSearchParams();
+  const next = sp.get('next') || '/store';
+
+  const { login, signInWithGoogle } = useAuth();
 
   // form
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  // UI
+  // ui
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isEmailLoading, setIsEmailLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  const onEmailSubmit = async (e) => {
-    e.preventDefault();
+  // 🧱 ensure Firestore user doc exists
+  async function ensureUserDoc(user) {
+    const ref = doc(db, 'users', user.uid);
+    const snap = await getDoc(ref);
+
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        email: user.email || null,
+        role: 'user', // default role
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+      return 'user';
+    } else {
+      const data = snap.data();
+      await setDoc(
+        ref,
+        {
+          email: user.email || null,
+          updatedAt: serverTimestamp(),
+        },
+        { merge: true }
+      );
+      return data.role || 'user';
+    }
+  }
+
+  // 🍪 set cookies for middleware
+  function setRoleCookies(role) {
+    if (typeof document === 'undefined') return;
+
+    const maxAge = 60 * 60 * 24 * 5; // 5 days
+
+    document.cookie = `logged_in=true; path=/; max-age=${maxAge}`;
+    document.cookie = `role=${role}; path=/; max-age=${maxAge}`;
+  }
+  // central post-login handler
+  function handlePostLogin(role, mode) {
+    setRoleCookies(role);
+
+    if (mode === 'admin') {
+      if (role !== 'admin') {
+        // 🚫 not actually an admin → no redirect
+        setError("This account doesn't have admin access.");
+        return;
+      }
+      // ✅ real admin wanting admin area
+      router.push('/admin/dashboard');
+    } else {
+      // normal user flow (or admin choosing to go to store)
+      router.push(next);
+    }
+  }
+  const onEmailSubmit = async ({ mode = 'user' } = {}) => {
     setError('');
     setIsEmailLoading(true);
     try {
-      await login(email, password);
-      router.push('/');
+      const cred = await login(email, password);
+      const role = await ensureUserDoc(cred.user); // 'admin' or 'user'
+      handlePostLogin(role, mode);
     } catch (err) {
-      setError('Failed to log in: ' + (err?.message || 'Unknown error'));
+      setError(err?.message || 'Failed to log in');
     } finally {
       setIsEmailLoading(false);
     }
   };
 
-  const onGoogleSignIn = async () => {
+  const onGoogleSignIn = async ({ mode = 'user' } = {}) => {
     setError('');
     setIsGoogleLoading(true);
     try {
-      await googleAuth();
-      router.push('/');
+      const cred = await signInWithGoogle();
+      const role = await ensureUserDoc(cred.user);
+      handlePostLogin(role, mode);
     } catch (err) {
-      setError('Google sign-in failed: ' + (err?.message || 'Unknown error'));
+      setError(err?.message || 'Google sign-in failed');
     } finally {
       setIsGoogleLoading(false);
     }
   };
 
   return {
-    // form state
-    email, setEmail,
-    password, setPassword,
-
-    // ui state
-    showPassword, setShowPassword,
+    email,
+    setEmail,
+    password,
+    setPassword,
+    showPassword,
+    setShowPassword,
     error,
     isEmailLoading,
     isGoogleLoading,
-
-    // actions
     onEmailSubmit,
     onGoogleSignIn,
   };

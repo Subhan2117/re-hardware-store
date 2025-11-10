@@ -3,19 +3,19 @@
 import { useState } from 'react';
 import { setDoc, doc } from 'firebase/firestore';
 // ⬇️ Keep your original path; adjust if your structure differs
-import { db, googleAuth, emailAuth } from '@/api/firebase/firebase.js';
+import { db, googleAuth, emailAuth } from '@/app/api/firebase/firebase.js';
 
 export default function useRegister() {
   // Form state
-  const [fullName, setFullName]   = useState('');
-  const [email, setEmail]         = useState('');
-  const [password, setPassword]   = useState('');
+  const [fullName, setFullName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   // UI state
-  const [error, setError]         = useState('');
-  const [success, setSuccess]     = useState('');
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
-  const [isEmailLoading, setIsEmailLoading]   = useState(false);
+  const [isEmailLoading, setIsEmailLoading] = useState(false);
 
   const resetMessages = () => {
     setError('');
@@ -72,13 +72,18 @@ export default function useRegister() {
 
   return {
     // form state + setters
-    fullName, setFullName,
-    email, setEmail,
-    password, setPassword,
+    fullName,
+    setFullName,
+    email,
+    setEmail,
+    password,
+    setPassword,
 
     // status
-    error, success,
-    isGoogleLoading, isEmailLoading,
+    error,
+    success,
+    isGoogleLoading,
+    isEmailLoading,
 
     // actions
     handleGoogleSignUp,

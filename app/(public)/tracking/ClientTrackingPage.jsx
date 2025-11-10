@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { mockOrders } from '@/app/mock-data/mockOrders';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
 

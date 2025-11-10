@@ -9,13 +9,15 @@ import {
   startAfter,
   getDocs,
 } from 'firebase/firestore';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 
 export default function useProducts({
   pageSize = 10,
   search = '',
   category = 'all',
   stock = 'all',
+  // optional key to force reloads from callers (e.g. after delete)
+  reloadKey = 0,
 }) {
   const [products, setProducts] = useState([]);
   const [lastDoc, setLastDoc] = useState(null);
@@ -99,7 +101,8 @@ export default function useProducts({
   useEffect(() => {
     const startDoc = page === 1 ? null : cursorsRef.current[page];
     fetchPage(startDoc);
-  }, [page, category, stock, search, pageSize]);
+    // include reloadKey so callers can force a refetch (increment the key)
+  }, [page, category, stock, search, pageSize, reloadKey]);
 
   const loadNextPage = async () => {
     if (!lastDoc) return;

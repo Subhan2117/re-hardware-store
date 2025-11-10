@@ -6,7 +6,7 @@ import { useState, useEffect, useRef } from 'react';
 import useCatalogFilters from '@/app/hooks/useCatalogFilters';
 import ProductCard from '@/app/component/ProductCard';
 import { useCart } from '@/app/context/CartContext';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 
 export default function StoreClient({
@@ -17,22 +17,102 @@ export default function StoreClient({
 }) {
   const [products, setProducts] = useState([]);
 
-  // Fetch products from Firebase
+  // We will ONLY use dbCategories (from Firestore)
+  const [dbCategories, setDbCategories] = useState([
+    { value: 'all', label: 'All categories' },
+  ]);
+
+  // Helper to mirror the slug logic from useCatalogFilters
+  const slug = (s) => s?.toString().toLowerCase().replace(/\s+/g, '-');
+
+  // Fetch products + reviews from Firebase
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchData = async () => {
       try {
-        const snapshot = await getDocs(collection(db, 'products'));
-        const data = snapshot.docs.map(doc => ({
+        // 1) Get products
+        const productsSnap = await getDocs(collection(db, 'products'));
+        const rawProducts = productsSnap.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
-        setProducts(data)
+
+        // 2) Get *all* reviews
+        const reviewsSnap = await getDocs(collection(db, 'reviews'));
+
+        // 3) Build a map: productId -> { total, count }
+        const stats = {};
+        reviewsSnap.forEach((doc) => {
+          const data = doc.data();
+          const productId = data.productId;
+          const rating = Number(data.rating);
+
+          if (!productId || Number.isNaN(rating)) return;
+
+          if (!stats[productId]) {
+            stats[productId] = { total: 0, count: 0 };
+          }
+          stats[productId].total += rating;
+          stats[productId].count += 1;
+        });
+
+        // 4) Attach avg rating + reviewCount to each product
+        const merged = rawProducts.map((p) => {
+          const s = stats[p.id];
+          if (!s) {
+            return { ...p, rating: null, reviewCount: 0 };
+          }
+          return {
+            ...p,
+            rating: s.total / s.count,
+            reviewCount: s.count,
+          };
+        });
+
+        setProducts(merged);
       } catch (error) {
-        console.error("Error fetching products:", error)
+        console.error('Error fetching products or reviews:', error);
       }
     };
 
-    fetchProducts();
+    fetchData();
+  }, []);
+
+  // Fetch categories from Firestore and build dropdown options
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const snap = await getDocs(collection(db, 'categories'));
+        if (snap.empty) {
+          // If no categories collection, just leave "All categories"
+          return;
+        }
+
+        const cats = snap.docs.map((doc) => doc.data());
+
+        const normalized = cats.map((c) => {
+          // Try to get a slug-like value from the doc
+          const valueSlug =
+            c.slug || c.value || slug(c.name || c.label || '');
+
+          const labelText =
+            c.name || c.label || c.slug || c.value || valueSlug;
+
+          return {
+            value: valueSlug, // this will be used in selectedCategory
+            label: labelText, // what user sees in dropdown
+          };
+        });
+
+        setDbCategories([
+          { value: 'all', label: 'All categories' },
+          ...normalized,
+        ]);
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
+    };
+
+    fetchCategories();
   }, []);
 
   const {
@@ -58,6 +138,13 @@ export default function StoreClient({
       inputRef.current?.focus();
     }
   }, [initialSearch, setSearchQuery]);
+
+  // For the "Active Filters" chip, show a nice label instead of the slug
+  const selectedCategoryLabel =
+    selectedCategory === 'all'
+      ? null
+      : dbCategories.find((c) => c.value === selectedCategory)?.label ||
+        selectedCategory;
 
   return (
     <div className="pt-24 pb-16 px-6">
@@ -108,8 +195,8 @@ export default function StoreClient({
                 onChange={(e) => setSelectedCategory(e.target.value)}
                 className="w-full h-12 px-4 bg-transparent rounded-2xl text-slate-700 focus:outline-none"
               >
-                {categoryOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
+                {dbCategories.map((opt, idx) => (
+                  <option key={`${opt.value}-${idx}`} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
@@ -127,8 +214,8 @@ export default function StoreClient({
                 onChange={(e) => setPriceRange(e.target.value)}
                 className="w-full h-12 px-4 bg-transparent rounded-2xl text-slate-700 focus:outline-none"
               >
-                {priceOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
+                {priceOptions.map((opt, idx) => (
+                  <option key={`${opt.value}-${idx}`} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
@@ -146,8 +233,8 @@ export default function StoreClient({
                 onChange={(e) => setStockFilter(e.target.value)}
                 className="w-full h-12 px-4 bg-transparent rounded-2xl text-slate-700 focus:outline-none"
               >
-                {stockOptions.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
+                {stockOptions.map((opt, idx) => (
+                  <option key={`${opt.value}-${idx}`} value={opt.value}>
                     {opt.label}
                   </option>
                 ))}
@@ -156,14 +243,16 @@ export default function StoreClient({
           </div>
 
           {/* Active Filters */}
-         <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
-  <div className="flex items-center gap-2 flex-wrap">
-    <span className="font-semibold text-gray-700">Active Filters:</span>
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-semibold text-gray-700">
+                Active Filters:
+              </span>
 
               <div>
                 {selectedCategory !== 'all' && (
                   <span className="px-3 py-1 bg-amber-100 text-amber-700 rounded-full text-sm">
-                    {selectedCategory}
+                    {selectedCategoryLabel}
                     <button
                       onClick={() => setSelectedCategory('all')}
                       className="ml-2 hover:text-amber-900 cursor-pointer"
@@ -228,25 +317,24 @@ export default function StoreClient({
 
           <div
             className="
-      grid gap-4 sm:gap-6
-      [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))]
-      md:[grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]
-      xl:[grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]
-      auto-rows-fr
-      items-stretch
-    "
+              grid gap-4 sm:gap-6
+              [grid-template-columns:repeat(auto-fill,minmax(220px,1fr))]
+              md:[grid-template-columns:repeat(auto-fill,minmax(240px,1fr))]
+              xl:[grid-template-columns:repeat(auto-fill,minmax(260px,1fr))]
+              auto-rows-fr
+              items-stretch
+            "
           >
-            {filtered.map((p) => (
-              <div key={p.id} className="relative h-full group">
-                {/* Overlay link makes the *card* clickable but not the controls */}
-   
+            {filtered.map((p, idx) => (
+              <div
+                key={p.id ?? `product-${idx}`}
+                className="relative h-full group"
+              >
                 <ProductCard
                   product={p}
                   onAddToCart={() => addToCart(p)}
                   cartQuantity={cart[p.id] || 0}
-                  // Make sure the card itself stretches to equal the grid row height:
                   className="h-full"
-
                 />
               </div>
             ))}

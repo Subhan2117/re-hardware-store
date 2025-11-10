@@ -1,7 +1,7 @@
-"use client";
+'use client';
 import { useEffect, useState } from 'react';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 
 const DEFAULT_CATEGORIES = [
   { name: 'Power Tools', value: 35 },
@@ -17,6 +17,7 @@ const toRad = (deg) => (deg * Math.PI) / 180;
 export default function CategoryDistribution({ data: initialData = null }) {
   const [data, setData] = useState(initialData || DEFAULT_CATEGORIES);
   const fills = ['#f97316', '#3b82f6', '#a855f7', '#10b981'];
+  const lightingFill = '#fbbf24'; // yellow for Lighting category
 
   const radius = 40;
   const cx = 50;
@@ -33,7 +34,10 @@ export default function CategoryDistribution({ data: initialData = null }) {
         let total = 0;
         snap.forEach((doc) => {
           const product = doc.data();
-          const cat = (product.category || 'Uncategorized').replace(/[-_]/g, ' ');
+          const cat = (product.category || 'Uncategorized').replace(
+            /[-_]/g,
+            ' '
+          );
           counts[cat] = (counts[cat] || 0) + 1;
           total += 1;
         });
@@ -73,7 +77,9 @@ export default function CategoryDistribution({ data: initialData = null }) {
           <div className="relative w-48 h-48">
             <svg viewBox="0 0 100 100" className="transform -rotate-90">
               {data.reduce((acc, category, index) => {
-                const prevTotal = data.slice(0, index).reduce((s, c) => s + c.value, 0);
+                const prevTotal = data
+                  .slice(0, index)
+                  .reduce((s, c) => s + c.value, 0);
                 const startAngle = (prevTotal / 100) * 360;
                 const endAngle = ((prevTotal + category.value) / 100) * 360;
                 const largeArc = category.value > 50 ? 1 : 0;
@@ -87,11 +93,13 @@ export default function CategoryDistribution({ data: initialData = null }) {
                   round(cy + radius * Math.sin(toRad(endAngle))),
                 ];
 
+                const isLighting = String(category.name || '').toLowerCase().trim() === 'lighting';
+                const sliceFill = isLighting ? lightingFill : fills[index % fills.length];
                 acc.push(
                   <path
                     key={index}
                     d={`M ${cx} ${cy} L ${sx} ${sy} A ${radius} ${radius} 0 ${largeArc} 1 ${ex} ${ey} Z`}
-                    style={{ fill: fills[index % fills.length] }}
+                    style={{ fill: sliceFill }}
                   />
                 );
                 return acc;
@@ -106,11 +114,15 @@ export default function CategoryDistribution({ data: initialData = null }) {
               <div className="flex items-center gap-3">
                 <div
                   className="w-4 h-4 rounded-full"
-                  style={{ background: fills[index % fills.length] }}
+                  style={{ background: String(category.name || '').toLowerCase().trim() === 'lighting' ? lightingFill : fills[index % fills.length] }}
                 />
-                <span className="text-sm font-medium text-gray-900">{category.name}</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {category.name}
+                </span>
               </div>
-              <span className="text-sm font-bold text-gray-900">{category.value}%</span>
+              <span className="text-sm font-bold text-gray-900">
+                {category.value}%
+              </span>
             </div>
           ))}
         </div>

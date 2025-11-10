@@ -10,12 +10,17 @@ export default function ProductCard({
   cartQuantity,
   className,
 }) {
-  const imgSrc = product.image || '/.jpg';
+  const imgSrc = product.image || '/file.svg';
   const handleAdd = (e) => {
     e.stopPropagation(); // don't bubble to overlay link
     e.preventDefault(); // don't trigger navigation
     onAddToCart?.();
   };
+  {
+    /* Rating */
+  }
+  const ratingValue = Number(product.rating ?? 0);
+
   return (
     <div
       className={clsx(
@@ -75,13 +80,14 @@ export default function ProductCard({
         </p>
 
         {/* Rating */}
+        {/* Rating */}
         <div className="flex items-center gap-2 mb-4">
           <div className="flex items-center">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
                 className={`w-4 h-4 ${
-                  i < Math.floor(product.rating ?? 0)
+                  ratingValue && i < Math.round(ratingValue)
                     ? 'fill-amber-500 text-amber-500'
                     : 'text-slate-300'
                 }`}
@@ -89,7 +95,9 @@ export default function ProductCard({
             ))}
           </div>
           <span className="text-sm text-slate-600 font-medium">
-            {product.rating ?? '-'}
+            {ratingValue ? ratingValue.toFixed(1) : '-'}
+            {typeof product.reviewCount === 'number' &&
+              ` (${product.reviewCount})`}
           </span>
         </div>
 

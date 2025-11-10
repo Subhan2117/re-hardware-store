@@ -53,7 +53,7 @@ export default function OrdersClient() {
   const orders = activeTab === 'current' ? currentOrders : previousOrders;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white mt-15">
       <div className="mx-auto max-w-6xl px-4 py-10">
         {/* Header */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -132,10 +132,7 @@ export default function OrdersClient() {
               {/* Items */}
               <div className="divide-y divide-gray-200">
                 {order.items.map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="flex items-center space-x-4 py-4"
-                  >
+                  <div key={idx} className="flex items-center space-x-4 py-4">
                     <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
                       <img
                         src={item.img}
@@ -144,12 +141,8 @@ export default function OrdersClient() {
                       />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-gray-800">
-                        {item.name}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        Qty: {item.qty}
-                      </p>
+                      <p className="font-semibold text-gray-800">{item.name}</p>
+                      <p className="text-sm text-gray-500">Qty: {item.qty}</p>
                     </div>
                     <p className="font-bold text-gray-700">{item.price}</p>
                   </div>
@@ -182,9 +175,12 @@ export default function OrdersClient() {
 
               {/* BUTTONS FOR TRACKING */}
               <div className="flex justify-between mt-6">
-                <Link href="/tracking" className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors">
-                <Truck className="h-4 w-4" />
-                Track Order
+                <Link
+                  href="/tracking"
+                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                >
+                  <Truck className="h-4 w-4" />
+                  Track Order
                 </Link>
               </div>
             </div>

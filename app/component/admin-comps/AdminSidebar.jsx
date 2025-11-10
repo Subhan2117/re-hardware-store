@@ -7,10 +7,13 @@ import {
   ShoppingCart,
   FolderTree,
   BarChart3,
+  LogOut,
+  Users,
   Settings,
   X,
   Bookmark,
   Menu,
+  Store,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -32,10 +35,25 @@ const SIDEBAR_ITEMS = [
   },
 
   {
+    id: 'users',
+    label: 'Users',
+    icon: Users,
+    href: '/admin/users',
+  },
+  { id: 'store', label: 'Visit Store', icon: Store, href: '/store' },
+
+  {
     id: 'settings',
     label: 'Settings',
     icon: Settings,
-    href: '/admin/settings',
+    href: '/user/profile',
+  },
+
+  {
+    id: 'logout',
+    label: 'Logout',
+    icon: LogOut,
+    href: '/admin/logout',
   },
 ];
 

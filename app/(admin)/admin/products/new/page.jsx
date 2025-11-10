@@ -1,10 +1,10 @@
 'use client';
-import { ref as sRef, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { storage } from '@/api/firebase/firebase';
+import { storage } from '@/app/api/appwrite/appwrite';
+import { ID } from 'appwrite';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Upload, Package, Plus, X } from 'lucide-react';
-import { db } from '@/api/firebase/firebase';
+import { db } from '@/app/api/firebase/firebase';
 // add to your imports
 import {
   collection,
@@ -176,15 +176,26 @@ export default function AddProductPage() {
   }
 
   async function uploadAllProductImages(productId, files) {
-    const urls = await Promise.all(
-      files.map(async (file) => {
-        const key = `products/${productId}/${Date.now()}-${file.name}`;
-        const fileRef = sRef(storage, key);
-        await uploadBytes(fileRef, file);
-        return await getDownloadURL(fileRef);
-      })
-    );
-    return urls;
+    try {
+      const urls = [];
+
+      for (const file of files) {
+        const response = await storage.createFile(
+          process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID,
+          ID.unique(),
+          file
+        );
+
+        const previewUrl = `${process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT}/storage/buckets/${process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID}/files/${response.$id}/view?project=${process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID}&width=800&height=800&quality=90`;
+        urls.push(previewUrl);
+      }
+
+      console.log('Uploaded URLS:', urls);
+      return urls;
+    } catch (err) {
+      console.error('Appwrite upload error:', err);
+      throw err;
+    }
   }
 
   async function handleSubmit(e) {
@@ -210,11 +221,10 @@ export default function AddProductPage() {
       }
 
       // Upload images (if any), then update Firestore with their URLs
+      let downloadURLs = [];
+
       if (imageFiles.length) {
-        const downloadURLs = await uploadAllProductImages(
-          productRef.id,
-          imageFiles
-        );
+        downloadURLs = await uploadAllProductImages(productRef.id, imageFiles);
 
         // if no primary provided, use the first uploaded
         const primary = check.data.image?.trim()
@@ -226,6 +236,14 @@ export default function AddProductPage() {
           image: primary,
           updatedAt: serverTimestamp?.(),
         });
+      }
+
+      if (downloadURLs.length) {
+        setImages(downloadURLs);
+        setForm((f) => ({
+          ...f,
+          image: f.image || downloadURLs[0],
+        }));
       }
 
       setBanner({ type: 'success', msg: 'Product added successfully.' });
@@ -246,7 +264,6 @@ export default function AddProductPage() {
         features: [''],
         specifications: [{ key: '', value: '' }],
       });
-      setImages([]);
       setImageFiles([]);
     } catch (err) {
       console.error('Add product failed:', err);

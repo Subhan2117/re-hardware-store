@@ -14,16 +14,23 @@ import {
   Check,
 } from 'lucide-react';
 import { useCart } from '@/app/context/CartContext';
-import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/api/firebase/firebase';
-
+import { db } from '@/app/api/firebase/firebase';
+import {
+  doc,
+  getDoc,
+  collection,
+  getDocs,
+  query,
+  where,
+} from 'firebase/firestore';
 
 export default function ProductDetailsClient({ productId }) {
   const router = useRouter();
   const { cart, addToCart, setCart } = useCart();
 
   const [product, setProduct] = useState(null);
-
+  const [avgRating, setAvgRating] = useState(null);
+  const [reviewCount, setReviewCount] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
 
@@ -45,6 +52,39 @@ export default function ProductDetailsClient({ productId }) {
     };
 
     fetchProduct();
+  }, [productId]);
+
+  useEffect(() => {
+    if (!productId) return;
+
+    const fetchReviews = async () => {
+      try {
+        const reviewsRef = collection(db, 'reviews');
+        const q = query(reviewsRef, where('productId', '==', productId));
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          setAvgRating(null);
+          setReviewCount(0);
+          return;
+        }
+
+        let total = 0;
+        snap.forEach((doc) => {
+          const data = doc.data();
+          total += Number(data.rating || 0);
+        });
+
+        setReviewCount(snap.size);
+        setAvgRating(total / snap.size);
+      } catch (err) {
+        console.error('Error fetching reviews:', err);
+        setAvgRating(null);
+        setReviewCount(0);
+      }
+    };
+
+    fetchReviews();
   }, [productId]);
 
   const currentQtyInCart = Number(cart?.[product?.id] || 0);
@@ -101,13 +141,24 @@ export default function ProductDetailsClient({ productId }) {
   }, [inStock, maxAddable, quantity, router, setCart, product, stock]);
 
   if (!product) {
-    return(
+    return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center px-6">
-        <h1 className="text-3xl font-bold text-slate-800 mb-4">Product not found</h1>
-        <p className="text-slate-600">We couldn't find the product you're looking for.</p>
-      </div> 
-    )
+        <h1 className="text-3xl font-bold text-slate-800 mb-4">
+          Product not found
+        </h1>
+        <p className="text-slate-600">
+          We couldn't find the product you're looking for.
+        </p>
+      </div>
+    );
   }
+
+  const displayRating =
+    typeof avgRating === 'number'
+      ? avgRating
+      : typeof product?.rating === 'number'
+      ? product.rating
+      : null;
 
   return (
     <div className="grid lg:grid-cols-2 gap-12 mb-16">
@@ -122,7 +173,7 @@ export default function ProductDetailsClient({ productId }) {
               className="object-cover"
               sizes="(max-width: 1024px) 100vw, 50vw"
               priority
-              fetchPriority="high" 
+              fetchPriority="high"
             />
           </div>
         </div>
@@ -165,25 +216,28 @@ export default function ProductDetailsClient({ productId }) {
         </h1>
 
         {/* Rating */}
+        {/* Rating */}
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1">
             {[...Array(5)].map((_, i) => (
               <Star
                 key={i}
                 className={`w-5 h-5 ${
-                  i < Math.floor(product.rating ?? 0)
+                  displayRating && i < Math.round(displayRating)
                     ? 'fill-amber-500 text-amber-500'
                     : 'text-slate-300'
                 }`}
               />
             ))}
           </div>
+
           <span className="text-lg font-bold text-slate-800">
-            {typeof product.rating === 'number'
-              ? product.rating.toFixed(1)
-              : product.rating}
+            {displayRating ? displayRating.toFixed(1) : '-'}
           </span>
-          <span className="text-slate-600">({product.reviews} reviews)</span>
+
+          <span className="text-slate-600">
+            ({reviewCount} {reviewCount === 1 ? 'review' : 'reviews'})
+          </span>
         </div>
 
         {/* Price */}
