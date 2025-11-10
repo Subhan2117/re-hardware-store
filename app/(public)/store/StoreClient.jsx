@@ -91,11 +91,9 @@ export default function StoreClient({
 
         const normalized = cats.map((c) => {
           // Try to get a slug-like value from the doc
-          const valueSlug =
-            c.slug || c.value || slug(c.name || c.label || '');
+          const valueSlug = c.slug || c.value || slug(c.name || c.label || '');
 
-          const labelText =
-            c.name || c.label || c.slug || c.value || valueSlug;
+          const labelText = c.name || c.label || c.slug || c.value || valueSlug;
 
           return {
             value: valueSlug, // this will be used in selectedCategory
