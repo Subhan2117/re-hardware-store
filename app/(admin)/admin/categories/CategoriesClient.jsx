@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState, useMemo } from 'react';
 import { db } from '@/app/api/firebase/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import {
   Wrench,
   Hammer,
@@ -85,9 +85,9 @@ export default function CategoriesClient() {
     return categoriesWithCounts.filter((c) => c.name.toLowerCase().includes(q));
   }, [categoriesWithCounts, query]);
 
-  // static delete handler placeholder
-  const handleDelete = (id, name) => {
-    console.log(`Delete category: ${name} (id: ${id})`);
+  const handleDelete = async (id) => {
+    const docSnap = doc(db, "categories", id);
+    await deleteDoc(docSnap);
   };
 
   return (
