@@ -16,11 +16,11 @@ import {
   Scissors,
   Zap,
   Search,
+  Trash2, // ✅ added for delete button icon
 } from 'lucide-react';
 import NewCategoryModal from '@/app/component/admin-comps/NewCategory';
 import { useRouter } from 'next/navigation';
 
-// optional icons map for each category
 const categoryIcons = {
   'Power Tools': <Wrench className="h-5 w-5" />,
   'Hand Tools': <Hammer className="h-5 w-5" />,
@@ -36,7 +36,6 @@ const categoryIcons = {
   Generators: <Zap className="h-5 w-5" />,
 };
 
-// OUR MAIN CATEGORIES PAGE (client component)
 export default function CategoriesClient() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
@@ -44,18 +43,15 @@ export default function CategoriesClient() {
   const [showNewCat, setShowNewCat] = useState(false);
   const router = useRouter();
 
-  // Fetch categories and products
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Get categories
         const catSnap = await getDocs(collection(db, 'categories'));
         const categoryData = catSnap.docs.map(doc => ({
           id: doc.id,
           ...doc.data(),
         }));
 
-        // Get products
         const prodSnap = await getDocs(collection(db, 'products'));
         const productData = prodSnap.docs.map(doc => ({
           id: doc.id,
@@ -83,12 +79,16 @@ export default function CategoriesClient() {
     });
   }, [categories, products]);
 
-  // Filter by search
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return categoriesWithCounts;
     return categoriesWithCounts.filter(c => c.name.toLowerCase().includes(q));
   }, [categoriesWithCounts, query]);
+
+  // static delete handler placeholder
+  const handleDelete = (id, name) => {
+    console.log(`Delete category: ${name} (id: ${id})`);
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white">
@@ -128,10 +128,10 @@ export default function CategoriesClient() {
           {filtered.map((cat) => (
             <div
               key={cat.id}
-              onClick={() => router.push(`/catalog?category=${encodeURIComponent(cat.name)}`)}
-              className="cursor-pointer group relative overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
+              // ✅ removed router.push to make it non-clickable
+              className="relative rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
             >
-              <div className="p-5">
+              <div className="p-5 flex justify-between items-start">
                 <div className="flex items-start gap-3">
                   <div className="rounded-xl bg-orange-50 p-3 text-orange-600">
                     {cat.icon}
@@ -143,6 +143,15 @@ export default function CategoriesClient() {
                     <p className="text-sm text-gray-500">{cat.count} items</p>
                   </div>
                 </div>
+
+                {/* ✅ static delete button */}
+                <button
+                  onClick={() => handleDelete(cat.id, cat.name)}
+                  className="text-gray-400 hover:text-red-600 transition"
+                  title="Delete Category"
+                >
+                  <Trash2 className="h-5 w-5" />
+                </button>
               </div>
             </div>
           ))}
