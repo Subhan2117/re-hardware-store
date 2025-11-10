@@ -7,6 +7,8 @@ import {
   ShoppingCart,
   FolderTree,
   BarChart3,
+  LogOut,
+  Users,
   Settings,
   X,
   Bookmark,
@@ -34,11 +36,27 @@ const SIDEBAR_ITEMS = [
   { id: 'store', label: 'Visit Store', icon: Store, href: '/store' },
 
   {
+    id: "users",
+    label: 'Users',
+    icon: Users,
+    href: '/admin/users',
+  },
+
+  {
     id: 'settings',
     label: 'Settings',
     icon: Settings,
-    href: '/admin/settings',
+    href: '/user/profile',
   },
+
+  {
+    id: 'logout',
+    label: 'Logout',
+    icon: LogOut,
+    href: '/admin/logout',
+  },
+
+
 ];
 
 export default function AdminSidebar() {
