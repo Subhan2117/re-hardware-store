@@ -85,9 +85,22 @@ export default function CategoriesClient() {
     return categoriesWithCounts.filter((c) => c.name.toLowerCase().includes(q));
   }, [categoriesWithCounts, query]);
 
-  const handleDelete = async (id) => {
-    const docSnap = doc(db, "categories", id);
-    await deleteDoc(docSnap);
+  const handleDelete = async (id, name) => {
+    try {
+      // optional: confirm
+      // if (!window.confirm(`Delete category "${name}"?`)) return;
+
+      // 1) Optimistically update UI
+      setCategories((prev) => prev.filter((cat) => cat.id !== id));
+
+      // 2) Delete in Firestore
+      const ref = doc(db, 'categories', id);
+      await deleteDoc(ref);
+    } catch (err) {
+      console.error('Error deleting category:', err);
+      // optional: revert if delete fails
+      // setCategories((prev) => [...prev, originalCat]);
+    }
   };
 
   return (
@@ -164,7 +177,13 @@ export default function CategoriesClient() {
         )}
 
         {showNewCat && (
-          <NewCategoryModal onClose={() => setShowNewCat(false)} />
+          <NewCategoryModal
+            onClose={() => setShowNewCat(false)}
+            onCreated={(newCat) => {
+              // push into local state so it shows without refresh
+              setCategories((prev) => [...prev, newCat]);
+            }}
+          />
         )}
       </div>
     </div>
