@@ -11,7 +11,8 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const { totalItems } = useCart();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { currentUser, logout } = useAuth();
+  const { currentUser, logout, role } = useAuth(); // 🔥 role from context
+
   const router = useRouter();
   const pathname = usePathname();
 
@@ -24,13 +25,6 @@ export default function Navbar() {
     { label: 'Track Order', href: '/tracking' },
   ];
 
-  const [role, setRole] = useState(null);
-
-  useEffect(() => {
-    if (typeof document === 'undefined') return;
-    const match = document.cookie.match(/(?:^|; )role=([^;]+)/);
-    setRole(match ? decodeURIComponent(match[1]) : null);
-  }, []);
   // Don’t show navbar on admin routes
   if (pathname.startsWith('/admin')) {
     return null;
@@ -39,21 +33,18 @@ export default function Navbar() {
   const isLoggedIn = !!currentUser;
   const handleLogout = async () => {
     try {
-      await logout();
+      await logout(); // this already clears cookies + sets role=null in context
 
-      // If you don’t actually have this route, remove it
+      // If you don’t actually have this route, you can remove this call
       await fetch('/api/auth/session-logout', { method: 'POST' });
     } catch (e) {
       console.error('Logout failed', e);
     } finally {
-      // 🔹 Clear client-side cookies (defensive)
+      // Extra cookie clearing is optional now; logout() already did it
       if (typeof document !== 'undefined') {
         document.cookie = 'logged_in=; path=/; max-age=0';
         document.cookie = 'role=; path=/; max-age=0';
       }
-
-      // 🔹 Immediately drop role from state
-      setRole(null);
 
       setUserMenuOpen(false);
       router.push('/');
@@ -169,7 +160,6 @@ export default function Navbar() {
                       className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600"
                     >
                       Sign Out
-                      
                     </button>
                   </div>
                 )}
