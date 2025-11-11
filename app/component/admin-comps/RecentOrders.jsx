@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { MoreHorizontal } from 'lucide-react';
-import { collection, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 import { db } from '@/app/api/firebase/firebase';
 
 const DEFAULT_ORDERS = [
@@ -53,6 +53,7 @@ function badgeClasses(status) {
 export default function RecentOrders({ orders: initialOrders = null }) {
   // default to empty and always try to fetch live recent orders when no prop is provided
   const [orders, setOrders] = useState(initialOrders ?? []);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (initialOrders) {
@@ -61,26 +62,37 @@ export default function RecentOrders({ orders: initialOrders = null }) {
     }
 
     const fetchOrders = async () => {
+      setLoading(true);
       try {
-        // fetch the 5 most recent orders by createdAt
-        const q = query(
-          collection(db, 'orders'),
-          orderBy('createdAt', 'desc'),
-          limit(5)
-        );
-        const snap = await getDocs(q);
-        const fetched = snap.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: data.orderNumber || `#${doc.id.slice(0, 6)}`,
-            customer: data.customerName || data.customer?.name || 'Customer',
-            amount: data.total || data.amount || 0,
-            status: data.status || 'processing',
-          };
-        });
-        setOrders(fetched);
+        // Fetch all orders (same source as admin Orders page), then pick the 5 most recent
+        const snap = await getDocs(collection(db, 'orders'));
+        const list = snap.docs.map((d) => ({ id: d.id, ...(d.data() || {}) }));
+
+        // Helper to read a timestamp-like field safely
+        const tsValue = (o) => {
+          // prefer createdAt (Firestore Timestamp)
+          if (o.createdAt && typeof o.createdAt.toDate === 'function') return o.createdAt.toDate().getTime();
+          // fallback to lastUpdate strings
+          if (o.lastUpdate) return new Date(o.lastUpdate).getTime();
+          // fallback to 0
+          return 0;
+        };
+
+        // sort by most-recent (createdAt or lastUpdate)
+        list.sort((a, b) => tsValue(b) - tsValue(a));
+
+        const top5 = list.slice(0, 5).map((data) => ({
+          id: data.orderNumber || data.trackingNumber || `#${data.id?.slice?.(0, 6) || ''}`,
+          customer: data.customerName || data.customer?.name || data.customerEmail || data.email || 'Customer',
+          amount: data.total || data.amount || 0,
+          status: data.status || 'processing',
+        }));
+
+        setOrders(top5);
       } catch (err) {
         console.error('Error fetching recent orders', err);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -99,7 +111,11 @@ export default function RecentOrders({ orders: initialOrders = null }) {
         </button>
       </div>
       <div className="p-5 space-y-3">
-        {orders.length > 0 &&
+        {loading && (
+          <div className="text-sm text-gray-600">Loading recent orders...</div>
+        )}
+
+        {!loading && orders.length > 0 &&
           orders.map((order) => (
             <div
               key={order.id}
@@ -118,7 +134,7 @@ export default function RecentOrders({ orders: initialOrders = null }) {
             </div>
           ))}
 
-        {orders.length === 0 && (
+        {!loading && orders.length === 0 && (
           <div className="text-sm text-gray-600">No recent orders.</div>
         )}
       </div>

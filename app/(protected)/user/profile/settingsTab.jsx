@@ -25,6 +25,13 @@ import {
   getDoc,
   setDoc,
   serverTimestamp,
+  collection,
+  addDoc,
+  getDocs,
+  deleteDoc,
+  updateDoc,
+  query,
+  orderBy,
 } from "firebase/firestore"
 
 import {
@@ -49,6 +56,222 @@ function ToggleSwitch({ checked, onChange }) {
         }`}
       />
     </button>
+  )
+}
+
+function AddressesTab({ user, db, toast }) {
+  const [addresses, setAddresses] = useState([])
+  const [loadingAddresses, setLoadingAddresses] = useState(true)
+  const [showAddForm, setShowAddForm] = useState(false)
+
+  // form state
+  const [addrLabel, setAddrLabel] = useState("")
+  const [addrPhone, setAddrPhone] = useState("")
+  const [addrStreet, setAddrStreet] = useState("")
+  const [addrCity, setAddrCity] = useState("")
+  const [addrState, setAddrState] = useState("")
+  const [addrPostal, setAddrPostal] = useState("")
+  const [addrCountry, setAddrCountry] = useState("")
+  const [addrDefault, setAddrDefault] = useState(false)
+  const [savingAddress, setSavingAddress] = useState(false)
+
+  useEffect(() => {
+    let alive = true
+    async function fetchAddresses() {
+      if (!user) {
+        if (alive) setLoadingAddresses(false)
+        return
+      }
+
+      try {
+        const colRef = collection(db, "users", user.uid, "addresses")
+        const q = query(colRef, orderBy("createdAt", "desc"))
+        const snap = await getDocs(q)
+        const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
+        if (alive) setAddresses(list)
+      } catch (err) {
+        console.error("Failed to load addresses", err)
+        toast({ title: "Error", description: "Could not load addresses." })
+      } finally {
+        if (alive) setLoadingAddresses(false)
+      }
+    }
+
+    fetchAddresses()
+    return () => { alive = false }
+  }, [user, db, toast])
+
+  async function handleAddAddress() {
+    if (!user) return
+    if (!addrStreet || !addrCity) {
+      toast({ title: "Missing fields", description: "Please provide street and city." })
+      return
+    }
+    setSavingAddress(true)
+    try {
+      const colRef = collection(db, "users", user.uid, "addresses")
+      // If setting default, clear previous defaults
+      if (addrDefault && addresses.length > 0) {
+        const prevDefault = addresses.find((a) => a.isDefault)
+        if (prevDefault) {
+          const prevRef = doc(db, "users", user.uid, "addresses", prevDefault.id)
+          await updateDoc(prevRef, { isDefault: false })
+        }
+      }
+
+      const payload = {
+        label: addrLabel || null,
+        phone: addrPhone || null,
+        street: addrStreet || null,
+        city: addrCity || null,
+        state: addrState || null,
+        postalCode: addrPostal || null,
+        country: addrCountry || null,
+        isDefault: !!addrDefault,
+        createdAt: serverTimestamp(),
+      }
+
+      const ref = await addDoc(colRef, payload)
+
+      // Optimistically update UI
+      setAddresses((prev) => [{ id: ref.id, ...payload, createdAt: new Date() }, ...prev])
+      setShowAddForm(false)
+      setAddrLabel("")
+      setAddrPhone("")
+      setAddrStreet("")
+      setAddrCity("")
+      setAddrState("")
+      setAddrPostal("")
+      setAddrCountry("")
+      setAddrDefault(false)
+
+      toast({ title: "Address saved", description: "Your address has been added." })
+    } catch (err) {
+      console.error("Failed to add address", err)
+      toast({ title: "Save failed", description: "Could not save address." })
+    } finally {
+      setSavingAddress(false)
+    }
+  }
+
+  async function handleDeleteAddress(id) {
+    if (!user) return
+    try {
+      await deleteDoc(doc(db, "users", user.uid, "addresses", id))
+      setAddresses((prev) => prev.filter((a) => a.id !== id))
+      toast({ title: "Deleted", description: "Address removed." })
+    } catch (err) {
+      console.error("Failed to delete address", err)
+      toast({ title: "Delete failed", description: "Could not delete address." })
+    }
+  }
+
+  async function handleSetDefault(id) {
+    if (!user) return
+    try {
+      // Clear existing default
+      const prev = addresses.find((a) => a.isDefault)
+      if (prev && prev.id !== id) {
+        await updateDoc(doc(db, "users", user.uid, "addresses", prev.id), { isDefault: false })
+      }
+      await updateDoc(doc(db, "users", user.uid, "addresses", id), { isDefault: true })
+      setAddresses((prev) => prev.map((a) => ({ ...a, isDefault: a.id === id })))
+      toast({ title: "Default set", description: "Default address updated." })
+    } catch (err) {
+      console.error("Failed to set default", err)
+      toast({ title: "Update failed", description: "Could not set default address." })
+    }
+  }
+
+  return (
+    <div className="backdrop-blur-lg border border-slate-200/30 bg-white/70 p-8 rounded-3xl shadow-lg space-y-6">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-2">
+        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl flex items-center justify-center">
+            <MapPin className="w-5 h-5 text-amber-600" />
+          </div>
+          Saved Addresses
+        </h2>
+        <button
+          type="button"
+          onClick={() => setShowAddForm((s) => !s)}
+          className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-500/20"
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          {showAddForm ? "Cancel" : "Add Address"}
+        </button>
+      </div>
+
+      <p className="text-sm text-slate-600">Manage your saved addresses here.</p>
+
+      {/* Add / Edit form */}
+      {showAddForm && (
+        <div className="p-4 border border-slate-100 rounded-xl bg-white/80">
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Label</label>
+              <input value={addrLabel} onChange={(e) => setAddrLabel(e.target.value)} placeholder="Home, Work, etc." className="w-full px-3 py-2 rounded-xl border" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Phone</label>
+              <input value={addrPhone} onChange={(e) => setAddrPhone(e.target.value)} placeholder="Phone number" className="w-full px-3 py-2 rounded-xl border" />
+            </div>
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-sm font-medium">Street Address</label>
+              <input value={addrStreet} onChange={(e) => setAddrStreet(e.target.value)} placeholder="123 Main St" className="w-full px-3 py-2 rounded-xl border" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">City</label>
+              <input value={addrCity} onChange={(e) => setAddrCity(e.target.value)} placeholder="City" className="w-full px-3 py-2 rounded-xl border" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">State / Region</label>
+              <input value={addrState} onChange={(e) => setAddrState(e.target.value)} placeholder="State" className="w-full px-3 py-2 rounded-xl border" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Postal Code</label>
+              <input value={addrPostal} onChange={(e) => setAddrPostal(e.target.value)} placeholder="ZIP / Postal" className="w-full px-3 py-2 rounded-xl border" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Country</label>
+              <input value={addrCountry} onChange={(e) => setAddrCountry(e.target.value)} placeholder="Country" className="w-full px-3 py-2 rounded-xl border" />
+            </div>
+            <div className="flex items-center gap-3">
+              <input id="defaultAddr" type="checkbox" checked={addrDefault} onChange={(e) => setAddrDefault(e.target.checked)} />
+              <label htmlFor="defaultAddr" className="text-sm">Set as default</label>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-4">
+            <button type="button" onClick={() => setShowAddForm(false)} className="px-4 py-2 rounded-xl border">Cancel</button>
+            <button type="button" onClick={handleAddAddress} disabled={savingAddress} className="px-4 py-2 rounded-xl bg-amber-600 text-white">{savingAddress ? 'Saving...' : 'Save Address'}</button>
+          </div>
+        </div>
+      )}
+
+      {/* Addresses list */}
+      <div className="space-y-3">
+        {loadingAddresses && <div className="text-sm text-slate-600">Loading addresses...</div>}
+        {!loadingAddresses && addresses.length === 0 && <div className="text-sm text-slate-600">No saved addresses.</div>}
+        {addresses.map((a) => (
+          <div key={a.id} className="p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-all border border-orange-100 flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                <div className="font-semibold">{a.label || 'Address'}</div>
+                {a.isDefault && <div className="text-xs text-green-700 bg-green-100 px-2 py-0.5 rounded">Default</div>}
+              </div>
+              <div className="text-sm text-gray-700">{a.street}</div>
+              <div className="text-xs text-gray-600">{a.city}{a.state ? `, ${a.state}` : ''} {a.postalCode}</div>
+              {a.phone && <div className="text-xs text-gray-600">{a.phone}</div>}
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <button onClick={() => handleSetDefault(a.id)} className="text-sm text-amber-600">Set default</button>
+              <button onClick={() => handleDeleteAddress(a.id)} className="text-sm text-red-600">Delete</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -403,29 +626,13 @@ export default function SettingsTabs() {
         </div>
       )}
 
-      {/* Addresses Tab (placeholder for later) */}
+      {/* Addresses Tab */}
       {activeTab === "addresses" && (
-        <div className="backdrop-blur-lg border border-slate-200/30 bg-white/70 p-8 rounded-3xl shadow-lg space-y-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-2">
-            <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-amber-100 to-amber-50 rounded-xl flex items-center justify-center">
-                <MapPin className="w-5 h-5 text-amber-600" />
-              </div>
-              Saved Addresses
-            </h2>
-            <button
-              type="button"
-              className="inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-medium bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white shadow-lg shadow-amber-500/20"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Add Address
-            </button>
-          </div>
-
-          <p className="text-sm text-slate-600">
-            Address management coming soon. You&apos;ll be able to add and edit your home and work addresses here.
-          </p>
-        </div>
+        <AddressesTab
+          user={user}
+          db={db}
+          toast={toast}
+        />
       )}
 
       {/* Security Tab */}
