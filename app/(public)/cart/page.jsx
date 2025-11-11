@@ -5,8 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useMemo } from 'react';
 import { useCart } from '@/app/context/CartContext';
-// Adjust this import to your actual product source:
-import { mockProducts } from '@/app/mock-data/mockProducts.jsx';
 
 const TAX_RATE = 0.085;
 const SHIPPING_FLAT = 12.99;
@@ -22,49 +20,57 @@ export function calculateTotals(items) {
 export default function Page() {
   const { cart, addToCart, setCart } = useCart();
 
-  // helpers available in context-style:
+  // cart shape is { [id]: { product, quantity } }
+  const items = useMemo(() => {
+    return Object.values(cart || {})
+      .map((entry) => {
+        if (!entry?.product) return null;
+        return {
+          ...entry.product,
+          quantity: entry.quantity,
+        };
+      })
+      .filter(Boolean);
+  }, [cart]);
+
   const increment = (product) => addToCart(product);
+
   const decrement = (product) => {
     setCart((prev) => {
-      const current = prev[product.id] || 0;
-      if (current <= 1) {
+      const existing = prev[product.id];
+      if (!existing) return prev;
+
+      if (existing.quantity <= 1) {
         const { [product.id]: _, ...rest } = prev;
         return rest;
       }
-      return { ...prev, [product.id]: current - 1 };
+
+      return {
+        ...prev,
+        [product.id]: {
+          ...existing,
+          quantity: existing.quantity - 1,
+        },
+      };
     });
   };
+
   const remove = (productId) => {
     setCart((prev) => {
       const { [productId]: _, ...rest } = prev;
       return rest;
     });
   };
+
   const clear = () => setCart({});
 
-  // Build a quick lookup for products
-  const productById = useMemo(() => {
-    const map = {};
-    (mockProducts || []).forEach((p) => (map[p.id] = p));
-    return map;
-  }, []);
-
-  // Expand cart {id: qty} -> array of line items with product info
-  const items = useMemo(() => {
-    return Object.entries(cart || {})
-      .map(([id, qty]) => {
-        const p = productById[id];
-        if (!p) return null; // product might have been removed from catalog
-        return { ...p, quantity: qty };
-      })
-      .filter(Boolean);
-  }, [cart, productById]);
-
-  // Totals
   const { subtotal, shipping, tax, total } = calculateTotals(items);
 
   return (
     <div>
+      {/* If you actually want Navbar here, render it */}
+      {/* <Navbar /> */}
+
       <main
         style={{
           backgroundColor: '#FAEBD7',
@@ -105,7 +111,10 @@ export default function Page() {
               {items.map((item) => {
                 const lineTotal = (item.price * item.quantity).toFixed(2);
                 const canDecrement = item.quantity > 1;
-                const canIncrement = item.inStock && item.quantity < item.stock;
+                const canIncrement =
+                  (item.inStock !== false) &&
+                  (typeof item.stock !== 'number' ||
+                    item.quantity < item.stock);
 
                 return (
                   <div
@@ -134,9 +143,11 @@ export default function Page() {
                               SKU: {item.sku || item.id}
                             </p>
                             <p className="text-sm text-black/70 mt-1">
-                              {item.inStock
+                              {item.inStock === false
+                                ? 'Out of stock'
+                                : typeof item.stock === 'number'
                                 ? `${item.stock} in stock`
-                                : 'Out of stock'}
+                                : 'In stock'}
                             </p>
                           </div>
 
@@ -216,17 +227,23 @@ export default function Page() {
                 <div className="space-y-4 mb-6">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-black/60">Subtotal</span>
-                    <span className="font-medium">${subtotal.toFixed(2)}</span>
+                    <span className="font-medium">
+                      ${subtotal.toFixed(2)}
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-black/60">Shipping</span>
-                    <span className="font-medium">${shipping.toFixed(2)}</span>
+                    <span className="font-medium">
+                      ${shipping.toFixed(2)}
+                    </span>
                   </div>
 
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-black/60">Tax</span>
-                    <span className="font-medium">${tax.toFixed(2)}</span>
+                    <span className="font-medium">
+                      ${tax.toFixed(2)}
+                    </span>
                   </div>
 
                   <hr className="border-black/10" />
@@ -238,7 +255,7 @@ export default function Page() {
                     </span>
                   </div>
                 </div>
-                <Link href={'/checkout'}>
+                <Link href="/checkout">
                   <button className="w-full mb-5 cursor-pointer inline-flex items-center justify-center gap-2 rounded-xl bg-black px-4 py-3 text-white font-semibold hover:opacity-90 active:opacity-80 transition">
                     Proceed to Checkout
                   </button>
