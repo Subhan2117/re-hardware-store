@@ -31,7 +31,6 @@ export default function Page() {
       {/* Header */}
       <header className="relative z-10 p-6">
         <div className="max-w-7xl mx-auto flex items-center justify-end mt-20">
-     
           <p className="flex flex-col text-xs md:text-sm text-gray-600 text-right">
             Don&apos;t have an account?
             <Link
