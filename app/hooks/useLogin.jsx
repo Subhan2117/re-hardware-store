@@ -1,3 +1,4 @@
+// app/hooks/useLogin.jsx
 'use client';
 
 import { useState } from 'react';
@@ -23,15 +24,15 @@ export default function useLogin() {
   const [isEmailLoading, setIsEmailLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  // 🧱 ensure Firestore user doc exists
   async function ensureUserDoc(user) {
     const ref = doc(db, 'users', user.uid);
     const snap = await getDoc(ref);
 
     if (!snap.exists()) {
+      // default user; you can manually change to 'admin' in Firestore
       await setDoc(ref, {
         email: user.email || null,
-        role: 'user', // default role
+        role: 'user',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -50,40 +51,27 @@ export default function useLogin() {
     }
   }
 
-  // 🍪 set cookies for middleware
-  function setRoleCookies(role) {
-    if (typeof document === 'undefined') return;
-
-    const maxAge = 60 * 60 * 24 * 5; // 5 days
-
-    document.cookie = `logged_in=true; path=/; max-age=${maxAge}`;
-    document.cookie = `role=${role}; path=/; max-age=${maxAge}`;
-  }
-  // central post-login handler
   function handlePostLogin(role, mode) {
-    setRoleCookies(role);
-
     if (mode === 'admin') {
       if (role !== 'admin') {
-        // 🚫 not actually an admin → no redirect
         setError("This account doesn't have admin access.");
         return;
       }
-      // ✅ real admin wanting admin area
       router.push('/admin/dashboard');
     } else {
-      // normal user flow (or admin choosing to go to store)
       router.push(next);
     }
   }
+
   const onEmailSubmit = async ({ mode = 'user' } = {}) => {
     setError('');
     setIsEmailLoading(true);
     try {
       const cred = await login(email, password);
-      const role = await ensureUserDoc(cred.user); // 'admin' or 'user'
+      const role = await ensureUserDoc(cred.user);
       handlePostLogin(role, mode);
     } catch (err) {
+      console.error(err);
       setError(err?.message || 'Failed to log in');
     } finally {
       setIsEmailLoading(false);
@@ -98,6 +86,7 @@ export default function useLogin() {
       const role = await ensureUserDoc(cred.user);
       handlePostLogin(role, mode);
     } catch (err) {
+      console.error(err);
       setError(err?.message || 'Google sign-in failed');
     } finally {
       setIsGoogleLoading(false);

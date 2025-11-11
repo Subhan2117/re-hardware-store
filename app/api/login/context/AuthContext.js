@@ -1,7 +1,8 @@
+// app/api/login/context/AuthContext.jsx
 'use client';
 
 import { createContext, useContext, useState, useEffect } from 'react';
-import { auth, googleAuth, db } from '../../firebase/firebase';
+import { auth, googleAuth, db } from '../../firebase/firebase'; // adjust path if needed
 import {
   signInWithEmailAndPassword,
   onAuthStateChanged,
@@ -15,6 +16,14 @@ export function useAuth() {
   return useContext(AuthContext);
 }
 
+function setRoleCookies(role) {
+  if (typeof document === 'undefined') return;
+
+  const maxAge = 60 * 60 * 24 * 5; // 5 days
+  document.cookie = `logged_in=true; max-age=${maxAge}; path=/`;
+  document.cookie = `role=${encodeURIComponent(role)}; max-age=${maxAge}; path=/`;
+}
+
 function clearRoleCookies() {
   if (typeof document === 'undefined') return;
   document.cookie = 'logged_in=; max-age=0; path=/';
@@ -23,7 +32,8 @@ function clearRoleCookies() {
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
-  const [role, setRole] = useState(null); // 🔥 new
+  const [role, setRole] = useState(null); // 'admin' | 'user' | null
+  const [loading, setLoading] = useState(true);
 
   const login = (email, password) =>
     signInWithEmailAndPassword(auth, email, password);
@@ -35,41 +45,51 @@ export function AuthProvider({ children }) {
       if (!user) {
         setRole(null);
         clearRoleCookies();
+        setLoading(false);
         return;
       }
 
-      // 🔥 fetch role from Firestore users/{uid}
       try {
         const ref = doc(db, 'users', user.uid);
         const snap = await getDoc(ref);
         const data = snap.data();
-        setRole(data?.role || 'user');
+        const userRole = data?.role || 'user';
+
+        setRole(userRole);
+        setRoleCookies(userRole); // 🔥 keep cookies in sync with role
       } catch (err) {
         console.error('Failed to fetch user role', err);
         setRole('user');
+        setRoleCookies('user');
+      } finally {
+        setLoading(false);
       }
     });
 
     return unsubscribe;
   }, []);
 
-  const signInWithGoogle = () => {
-    return googleAuth();
-  };
+  const signInWithGoogle = () => googleAuth();
 
   const logout = async () => {
     await signOut(auth);
     clearRoleCookies();
     setRole(null);
+    setCurrentUser(null);
   };
 
   const value = {
     currentUser,
-    role,              // 🔥 expose role here
+    role,
+    loading,
     login,
     logout,
     signInWithGoogle,
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {!loading && children}
+    </AuthContext.Provider>
+  );
 }
