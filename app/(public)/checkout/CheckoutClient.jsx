@@ -9,28 +9,22 @@ export default function CheckoutClient() {
   // BELOW IS NEEDED TO CALCULATE ITEM COST AGAIN
   const { cart } = useCart();
 
-  const productById = useMemo(() => {
-    const map = {};
-    (mockProducts || []).forEach((p) => (map[p.id] = p));
-    return map;
-  }, []);
-
   const items = useMemo(() => {
-    return Object.entries(cart || {})
-      .map(([id, qty]) => {
-        const p = productById[id];
-        if (!p) return null;
-        return { ...p, quantity: qty };
+    return Object.values(cart || {})
+      .map((entry) => {
+        if (!entry?.product) return null;
+        return {
+          ...entry.product,
+          quantity: entry.quantity,
+        };
       })
       .filter(Boolean);
-  }, [cart, productById]);
+  }, [cart]);
 
   const { subtotal, shipping, tax, total } = calculateTotals(items);
 
   return (
     <div>
-      <Navbar />
-
       <main
         style={{
           backgroundColor: '#FAEBD7',
