@@ -219,7 +219,7 @@ export default function CheckoutClient() {
               type="button"
               onClick={handleStripeCheckout}
               disabled={!items.length}
-              className="mt-6 w-full rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-3 text-sm font-semibold text-white shadow-md transition-transform transition-colors duration-200 hover:from-orange-700 hover:to-amber-600 hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-amber-50"
+              className="mt-6 w-full rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-3 text-sm font-semibold text-white shadow-md transition-transform  duration-200 hover:from-orange-700 hover:to-amber-600 hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-amber-50"
             >
               Continue to secure payment
             </button>
