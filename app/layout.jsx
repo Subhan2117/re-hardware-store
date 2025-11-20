@@ -5,6 +5,7 @@ import { CartProvider } from './context/CartContext';
 import { Analytics } from '@vercel/analytics/next';
 import Navbar from './component/Navbar';
 import { ToastProvider } from './hooks/useToast';
+import BuildCraftAssistant from './component/Chat.jsx';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -32,6 +33,7 @@ export default function RootLayout({ children }) {
             <ToastProvider>
               <Navbar />
               {children}
+              <BuildCraftAssistant />
             </ToastProvider>
             <Analytics />
           </CartProvider>
