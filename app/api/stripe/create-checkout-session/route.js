@@ -6,6 +6,14 @@ export const runtime = 'nodejs';
 
 export async function POST(req) {
   try {
+    if (!stripe) {
+      console.error('Stripe is not configured (missing STRIPE_SECRET_KEY)');
+      return NextResponse.json(
+        { error: 'Stripe is not configured on the server' },
+        { status: 500 }
+      );
+    }
+
     const body = await req.json();
     const { items, shipping, tax } = body; // [{ id, name, price, quantity }, ...]
 
