@@ -15,7 +15,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { items, shipping, tax } = body; // [{ id, name, price, quantity }, ...]
+    const { items, shipping, tax, contact, shippingDetails } = body; // [{ id, name, price, quantity }, ...]
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -95,6 +95,21 @@ export async function POST(req) {
           },
         },
       ],
+      // 🔥 Use the email so Stripe can send its own receipt
+      customer_email: contact?.email || undefined,
+
+      // 🔥 Attach everything else as metadata for webhooks / Firestore later
+      metadata: {
+        firstName: contact?.firstName || '',
+        lastName: contact?.lastName || '',
+        phone: contact?.phone || '',
+        street: shippingDetails?.street || '',
+        city: shippingDetails?.city || '',
+        state: shippingDetails?.state || '',
+        zip: shippingDetails?.zip || '',
+        cart: JSON.stringify(items ?? []),
+      },
+
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout`,
     });

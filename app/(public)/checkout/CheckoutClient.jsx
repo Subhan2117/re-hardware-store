@@ -1,14 +1,11 @@
 'use client';
+
 import { useMemo } from 'react';
 import { calculateTotals } from '@/app/(public)/cart/page';
 import { useCart } from '@/app/context/CartContext';
-import { loadStripe } from '@stripe/stripe-js';
-
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
 export default function CheckoutClient() {
-  // BELOW IS NEEDED TO CALCULATE ITEM COST AGAIN
-  const { cart } = useCart();
+  const { cart, addToCart, setCart } = useCart();
 
   const items = useMemo(() => {
     return Object.values(cart || {})
@@ -19,374 +16,250 @@ export default function CheckoutClient() {
           quantity: entry.quantity,
         };
       })
-      .filter(Boolean);
+      .filter(Boolean) ;
   }, [cart]);
 
-  const { subtotal, shipping, tax, total } = calculateTotals(items);
+  const { subtotal, shipping, tax, total } = calculateTotals(items || []);
+
   const handleStripeCheckout = async () => {
-  try {
-    if (!items.length) {
-      alert('Your cart is empty');
-      return;
+    try {
+      if (!items.length) {
+        alert('Your cart is empty');
+        return;
+      }
+
+      const minimalItems = items.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      }));
+
+      const res = await fetch('/api/stripe/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          items: minimalItems,
+          shipping,
+          tax,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('Checkout session error:', data);
+        alert(data.error || 'Unable to start checkout');
+      }
+    } catch (err) {
+      console.error('Stripe checkout error:', err);
+      alert('Something went wrong starting checkout');
     }
+  };
 
-    const minimalItems = items.map((item) => ({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity,
-    }));
+  // Quantity controls
+  const handleIncrement = (item) => {
+    // addToCart uses product shape; item already includes id, name, price, etc.
+    addToCart(item);
+  };
 
-    const res = await fetch('/api/stripe/create-checkout-session', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        items: minimalItems,
-        shipping, // 🔥 send shipping to server
-        tax,    // (you can send this too if you want to handle tax as a line item later)
-      }),
+  const handleDecrement = (id) => {
+    setCart((prev) => {
+      const entry = prev[id];
+      if (!entry) return prev;
+
+      const newQty = entry.quantity - 1;
+      if (newQty <= 0) {
+        const { [id]: _, ...rest } = prev;
+        return rest;
+      }
+
+      return {
+        ...prev,
+        [id]: {
+          ...entry,
+          quantity: newQty,
+        },
+      };
     });
+  };
 
-    const data = await res.json();
-
-    if (res.ok && data.url) {
-      window.location.href = data.url;
-    } else {
-      console.error('Checkout session error:', data);
-      alert(data.error || 'Unable to start checkout');
-    }
-  } catch (err) {
-    console.error('Stripe checkout error:', err);
-    alert('Something went wrong starting checkout');
+  // Empty state
+  if (!items.length) {
+    return (
+      <main className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50/60 to-amber-100 pt-28 pb-16">
+        <div className="mx-auto flex max-w-3xl flex-col items-center justify-center px-4 text-center">
+          <h1 className="text-2xl font-semibold text-slate-900 sm:text-3xl">
+            Your cart is empty
+          </h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Add some tools and hardware to your cart before heading to checkout.
+          </p>
+        </div>
+      </main>
+    );
   }
-};
 
   return (
-    <div>
-      <main
-        style={{
-          backgroundColor: '#FAEBD7',
-          minHeight: '100vh',
-          paddingTop: '150px',
-          paddingLeft: '50px',
-          paddingRight: '50px',
-          color: 'black',
-        }}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
-          {/* LEFT COLUMN: your three sections (unchanged content) */}
-          <div className="grid gap-6">
-            {/* 1. FIRST NAME FORM */}
-            <section className="rounded-2xl border bg-white/80 shadow-sm backdrop-blur p-5 md:p-6">
-              <header className="mb-4 flex items-start gap-3">
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white font-semibold">
-                  1
-                </span>
-                <div>
-                  <h2 className="text-lg font-semibold">Contact Information</h2>
-                  <p className="text-sm text-slate-500">
-                    We’ll use this to send order updates
-                  </p>
-                </div>
-              </header>
-
-              <div className="grid gap-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="grid gap-1.5">
-                    <label
-                      htmlFor="firstName"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      First Name
-                    </label>
-                    <input
-                      id="firstName"
-                      name="firstName"
-                      placeholder="John"
-                      autoComplete="given-name"
-                      className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                    />
-                  </div>
-
-                  {/*LAST NAME*/}
-                  <div className="grid gap-1.5">
-                    <label
-                      htmlFor="lastName"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      Last Name
-                    </label>
-                    <input
-                      id="lastName"
-                      name="lastName"
-                      placeholder="Doe"
-                      autoComplete="family-name"
-                      className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-1.5">
-                  <label
-                    htmlFor="email"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Email Address
-                  </label>
-                  <input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="john.doe@example.com"
-                    autoComplete="email"
-                    inputMode="email"
-                    className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-
-                <div className="grid gap-1.5">
-                  <label
-                    htmlFor="phone"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Phone Number
-                  </label>
-                  <input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="(123) 456-7890"
-                    autoComplete="tel"
-                    inputMode="tel"
-                    className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-              </div>
-            </section>
-
-            {/* 2. Shipping address */}
-            <section className="rounded-2xl border bg-white/80 shadow-sm backdrop-blur p-5 md:p-6">
-              <header className="mb-4 flex items-start gap-3">
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white font-semibold">
-                  2
-                </span>
-                <div>
-                  <h2 className="text-lg font-semibold">Shipping Address</h2>
-                  <p className="text-sm text-slate-500">
-                    Where do we ship your order to?
-                  </p>
-                </div>
-              </header>
-
-              <div className="grid gap-4">
-                <div className="grid gap-1.5">
-                  <label
-                    htmlFor="street"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Street Address
-                  </label>
-                  <input
-                    id="street"
-                    name="street"
-                    placeholder="123 Main Street"
-                    autoComplete="address-line1"
-                    className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-3">
-                  <div className="grid gap-1.5">
-                    <label
-                      htmlFor="city"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      City
-                    </label>
-                    <input
-                      id="city"
-                      name="city"
-                      placeholder="New York"
-                      autoComplete="address-level2"
-                      className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                    />
-                  </div>
-
-                  <div className="grid gap-1.5">
-                    <label
-                      htmlFor="state"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      State
-                    </label>
-                    <input
-                      id="state"
-                      name="state"
-                      placeholder="NY"
-                      autoComplete="address-level1"
-                      className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                    />
-                  </div>
-
-                  <div className="grid gap-1.5">
-                    <label
-                      htmlFor="zip"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      ZIP Code
-                    </label>
-                    <input
-                      id="zip"
-                      name="zip"
-                      placeholder="10001"
-                      autoComplete="postal-code"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* CARD INFO */}
-            <section className="rounded-2xl border bg-white/80 shadow-sm backdrop-blur p-5 md:p-6">
-              <header className="mb-4 flex items-start gap-3">
-                <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-orange-500 text-white font-semibold">
-                  3
-                </span>
-                <div>
-                  <h2 className="text-lg font-semibold">Payment Details</h2>
-                  <p className="text-sm text-slate-500">Card Information</p>
-                </div>
-              </header>
-
-              <div className="grid gap-4">
-                <div className="grid gap-1.5">
-                  <label
-                    htmlFor="street"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Card Number
-                  </label>
-                  <input
-                    id="Card Number"
-                    name="cardNumber"
-                    placeholder="1234 5678 9012 3456"
-                    autoComplete="cc-number"
-                    className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-
-                <div className="grid gap-1.5">
-                  <label
-                    htmlFor="street"
-                    className="text-sm font-medium text-slate-700"
-                  >
-                    Card Name Holder
-                  </label>
-                  <input
-                    id="Card Holder Name"
-                    name="cardName"
-                    placeholder="John Doe"
-                    autoComplete="cc-name"
-                    className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                  />
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="grid gap-1.5">
-                    <label
-                      htmlFor="city"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      Expire Date
-                    </label>
-                    <input
-                      id="Expiration"
-                      name="cardExp"
-                      placeholder="MM/YY"
-                      autoComplete="cc-exp"
-                      input="date"
-                      className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                    />
-                  </div>
-
-                  <div className="grid gap-1.5">
-                    <label
-                      htmlFor="zip"
-                      className="text-sm font-medium text-slate-700"
-                    >
-                      CCV
-                    </label>
-                    <input
-                      id="CCV"
-                      name="cardCvc"
-                      placeholder="345"
-                      autoComplete="cc-csc"
-                      inputMode="numeric"
-                      className="w-full rounded-xl border bg-white px-3 py-3 outline-none focus:border-orange-400 focus:ring-2 focus:ring-orange-200"
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
+    <main className="min-h-screen bg-gradient-to-b from-amber-50 via-orange-50/60 to-amber-100 pt-28 pb-16">
+      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 sm:px-6 lg:px-8">
+        {/* Page header */}
+        <header className="flex flex-col gap-3 border-b border-orange-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-orange-600">
+              Checkout
+            </p>
+            <h1 className="mt-1 text-2xl font-semibold text-slate-900 sm:text-3xl">
+              Review your order
+            </h1>
+            <p className="mt-1 text-sm text-slate-600">
+              You&apos;ll enter your shipping and payment details securely on the next step.
+            </p>
           </div>
 
-          {/* RIGHT COLUMN: Order Summary */}
-          <aside className="h-max rounded-2xl border bg-white/80 shadow-sm backdrop-blur p-5 md:p-6 md:sticky md:top-24">
-            <h3 className="text-lg font-semibold mb-4">Order Summary</h3>
+          <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white/80 px-4 py-2 text-xs font-medium text-slate-700 shadow-sm ring-1 ring-orange-100">
+            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-[0.7rem] font-semibold text-white">
+              {items.length}
+            </span>
+            <span>{items.length === 1 ? 'Item in cart' : 'Items in cart'}</span>
+          </div>
+        </header>
 
-            {/* HERE WOULD GO THE LIST OF THINGS WE ARE BUYING*/}
+        {/* Layout: Order Summary bigger on left, info on right */}
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_1fr] items-start">
+          {/* ORDER SUMMARY — main focus */}
+          <aside className="order-2 h-max rounded-2xl border border-orange-100 bg-white/95 p-6 shadow-lg backdrop-blur-sm transition-transform duration-200 lg:sticky lg:top-28 lg:order-1">
+            <h3 className="text-xl font-semibold text-slate-900">
+              Order Summary
+            </h3>
+            <p className="mt-1 text-xs text-slate-500">
+              Adjust quantities and review your total before continuing.
+            </p>
 
-            <hr className="my-4" />
+            {/* Cart items list with quantity controls */}
+            <ul className="mt-4 max-h-80 space-y-2 overflow-y-auto pr-1">
+              {items.map((item) => (
+                <li
+                  key={item.id}
+                  className="flex items-center justify-between gap-4 rounded-xl bg-slate-50 px-4 py-3 text-sm shadow-sm transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div className="flex-1 space-y-0.5">
+                    <p className="font-medium text-slate-900">{item.name}</p>
+                    <p className="text-xs text-slate-500">
+                      ${Number(item.price).toFixed(2)} each
+                    </p>
 
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600">Subtotal</span>
-              <span className="font-medium">${subtotal.toFixed(2)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600">Shipping</span>
-              <span className="font-medium">${shipping.toFixed(2)}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-slate-600">Tax</span>
-              <span className="font-medium">${tax.toFixed(2)}</span>
-            </div>
+                    {/* Quantity controls */}
+                    <div className="mt-2 inline-flex items-center gap-2 rounded-full bg-white px-2 py-1 text-xs shadow-inner">
+                      <button
+                        type="button"
+                        onClick={() => handleDecrement(item.id)}
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-slate-200 text-slate-700 transition hover:bg-slate-100 active:scale-95"
+                      >
+                        −
+                      </button>
+                      <span className="min-w-[2rem] text-center text-sm font-semibold text-slate-900">
+                        {item.quantity}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleIncrement(item)}
+                        className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-white transition hover:bg-orange-600 active:scale-95"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
 
-            <hr className="my-4" />
-
-            <div className="text-base font-semibold flex items-center justify-between">
-              <span>Total</span>
-              <span>${total.toFixed(2)}</span>
-            </div>
-
-            <ul className="mt-4 space-y-2 text-xs text-slate-600">
-              <li className="flex items-center gap-2">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-600"></span>
-                Free returns within 30 days
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-600"></span>
-                Secure payment processing
-              </li>
-              <li className="flex items-center gap-2">
-                <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-600"></span>
-                Ships within 2–3 business days
-              </li>
+                  {/* Line total */}
+                  <div className="text-right">
+                    <span className="text-sm font-semibold text-slate-900">
+                      ${(Number(item.price) * item.quantity).toFixed(2)}
+                    </span>
+                  </div>
+                </li>
+              ))}
             </ul>
+
+            {/* Totals */}
+            <div className="mt-4 space-y-2 border-t border-slate-200 pt-4 text-sm">
+              <div className="flex justify-between">
+                <span className="text-slate-600">Subtotal</span>
+                <span className="font-medium text-slate-900">
+                  ${subtotal.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-600">Shipping</span>
+                <span className="font-medium text-slate-900">
+                  ${shipping.toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-600">Tax</span>
+                <span className="font-medium text-slate-900">
+                  ${tax.toFixed(2)}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 border-t border-slate-200 pt-4">
+              <div className="flex justify-between text-lg font-semibold text-slate-900">
+                <span>Total Due</span>
+                <span>${total.toFixed(2)}</span>
+              </div>
+              <p className="mt-1 text-[0.7rem] text-slate-500">
+                You&apos;ll see this total again on the Stripe payment page before confirming.
+              </p>
+            </div>
 
             <button
               type="button"
               onClick={handleStripeCheckout}
               disabled={!items.length}
-              className="mt-6 w-full rounded-xl bg-orange-600 px-5 py-3 text-white font-semibold shadow hover:bg-orange-700 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-orange-400"
+              className="mt-6 w-full rounded-xl bg-gradient-to-r from-orange-600 to-amber-500 px-5 py-3 text-sm font-semibold text-white shadow-md transition-transform transition-colors duration-200 hover:from-orange-700 hover:to-amber-600 hover:-translate-y-0.5 active:translate-y-0 disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-orange-400 focus:ring-offset-2 focus:ring-offset-amber-50"
             >
-              Pay Securely with Card
+              Continue to secure payment
             </button>
           </aside>
+
+          {/* INFO CARD — secondary, on right */}
+          <div className="order-1 space-y-5 lg:order-2">
+            <section className="rounded-2xl border border-orange-100 bg-white/90 p-6 shadow-sm backdrop-blur-sm transition-transform duration-200 hover:-translate-y-0.5 hover:shadow-md">
+              <h2 className="text-lg font-semibold text-slate-900">
+                You&apos;re almost done
+              </h2>
+              <p className="mt-2 text-sm text-slate-600">
+                On the next step you&apos;ll complete your purchase using Stripe Checkout. Stripe
+                securely handles your payment details and supports card payments as well as Apple Pay
+                and Google Pay when available on your device.
+              </p>
+
+              <ul className="mt-4 space-y-2 text-sm text-slate-600">
+                <li className="flex items-center gap-2">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500" />
+                  Review your items and total here before you pay.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500" />
+                  Enter shipping and payment details securely on Stripe.
+                </li>
+                <li className="flex items-center gap-2">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-orange-500" />
+                  Receive an order confirmation immediately after payment.
+                </li>
+              </ul>
+
+              <p className="mt-3 text-xs text-slate-500">
+                We never store your full card information. All payments are processed by Stripe using
+                industry-standard encryption.
+              </p>
+            </section>
+          </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
   );
 }
