@@ -12,9 +12,8 @@ export function CartProvider({ children }) {
   // 1) Hydrate from localStorage ONCE on mount
   useEffect(() => {
     try {
-      const saved = typeof window !== 'undefined'
-        ? localStorage.getItem('cart')
-        : null;
+      const saved =
+        typeof window !== 'undefined' ? localStorage.getItem('cart') : null;
 
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -47,10 +46,7 @@ export function CartProvider({ children }) {
       const currentQty = existing?.quantity || 0;
 
       if (product.inStock === false) return prev;
-      if (
-        typeof product.stock === 'number' &&
-        currentQty >= product.stock
-      ) {
+      if (typeof product.stock === 'number' && currentQty >= product.stock) {
         return prev;
       }
 
@@ -68,10 +64,16 @@ export function CartProvider({ children }) {
     (sum, entry) => sum + (entry?.quantity || 0),
     0
   );
+  const clearCart = () => {
+    setCart({});
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('cart'); // or whatever key you use
+    }
+  };
 
   return (
     <CartContext.Provider
-      value={{ cart, setCart, addToCart, totalItems }}
+      value={{ cart, setCart, addToCart, totalItems, clearCart }}
     >
       {children}
     </CartContext.Provider>
