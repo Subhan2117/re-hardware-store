@@ -1,9 +1,10 @@
 'use client';
-import Navbar from '@/app/component/Navbar';
 import { useMemo } from 'react';
 import { calculateTotals } from '@/app/(public)/cart/page';
 import { useCart } from '@/app/context/CartContext';
-import { mockProducts } from '@/app/mock-data/mockProducts.jsx';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLIC_KEY);
 
 export default function CheckoutClient() {
   // BELOW IS NEEDED TO CALCULATE ITEM COST AGAIN
@@ -22,6 +23,43 @@ export default function CheckoutClient() {
   }, [cart]);
 
   const { subtotal, shipping, tax, total } = calculateTotals(items);
+  const handleStripeCheckout = async () => {
+  try {
+    if (!items.length) {
+      alert('Your cart is empty');
+      return;
+    }
+
+    const minimalItems = items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity,
+    }));
+
+    const res = await fetch('/api/stripe/create-checkout-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        items: minimalItems,
+        shipping, // 🔥 send shipping to server
+        tax,    // (you can send this too if you want to handle tax as a line item later)
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.url) {
+      window.location.href = data.url;
+    } else {
+      console.error('Checkout session error:', data);
+      alert(data.error || 'Unable to start checkout');
+    }
+  } catch (err) {
+    console.error('Stripe checkout error:', err);
+    alert('Something went wrong starting checkout');
+  }
+};
 
   return (
     <div>
@@ -340,9 +378,11 @@ export default function CheckoutClient() {
 
             <button
               type="button"
-              className="mt-6 w-full rounded-xl bg-orange-600 px-5 py-3 text-white font-semibold shadow hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-orange-400"
+              onClick={handleStripeCheckout}
+              disabled={!items.length}
+              className="mt-6 w-full rounded-xl bg-orange-600 px-5 py-3 text-white font-semibold shadow hover:bg-orange-700 disabled:opacity-60 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-orange-400"
             >
-              Place Order
+              Pay Securely with Card
             </button>
           </aside>
         </div>
