@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  baseURL: "https://router.huggingface.co/v1",
+  apiKey: process.env.HF_TOKEN,
 });
 
 export async function POST(req) {
@@ -16,8 +17,31 @@ export async function POST(req) {
       );
     }
 
+    const formattedMessages = messages.map((m) => {
+      if (typeof m.content === "string") {
+        return {
+          role: m.role,
+          content: [
+            { type: 'text', text: m.content}
+          ]
+        };
+      }
+
+      if (Array.isArray(m.content)) {
+        return {
+          role: m.role,
+          content: m.content
+        };
+      }
+
+      return {
+        role: m.role,
+        content: [{ type: "text", text: String(m.content) }]
+      }
+    });
+
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4.1-mini', // or any chat model you want
+      model: "Qwen/Qwen2.5-VL-7B-Instruct:hyperbolic", // or any chat model you want
       temperature: 0.4,
       messages: [
         {
@@ -35,16 +59,15 @@ VERY IMPORTANT SAFETY:
 Keep answers concise but clear.`,
         },
         // forward the conversation from the client
-        ...messages.map((m) => ({
-          role: m.role === 'user' ? 'user' : 'assistant',
-          content: m.content,
-        })),
+        ...formattedMessages,
       ],
     });
 
     const reply =
-      completion.choices[0]?.message?.content ||
-      "I'm not sure what to say. Try asking your question a different way.";
+      completion?.choices[0]?.message?.content || {
+        role: "assistant",
+        content: [{ type: "text", text: "I'm not sure what to say. Try asking your question a different way." }]
+      }
 
     return NextResponse.json({ reply });
   } catch (err) {
