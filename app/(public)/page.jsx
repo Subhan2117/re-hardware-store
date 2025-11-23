@@ -1,5 +1,10 @@
+'use client';
 import { Badge } from 'lucide-react';
 import LiquidEther from '../component/background/LiquidEther';
+import { db } from '@/app/api/firebase/firebase';
+import { collection, getDocs } from 'firebase/firestore';
+import ProductCard from '@/app/component/ProductCard';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Hammer,
@@ -20,7 +25,25 @@ import {
   ShoppingCart,
 } from 'lucide-react';
 import Searchbar from '../component/Searchbar';
-export default function page() {
+
+export default function Page() {
+
+  const [popularProducts, setPopularProducts] = useState([]);
+
+  useEffect(() => {
+    async function fetchPopular() {
+      const snap = await getDocs(collection(db, "products"));
+      const all = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+      const firstFour = all.slice(0, 4);
+      setPopularProducts(firstFour);
+    }
+
+    fetchPopular();
+  }, []);
+
+  
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden">
       {/** NavaBar */}
@@ -98,78 +121,25 @@ export default function page() {
           </div>
 
           {/** Cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="backdrop-blur-lg border border-slate-200/30 bg-white/70 p-8 text-center group cursor-pointer animate-float hover:animate-none hover:-translate-y-2 transition-all duration-500 shadow-lg hover:shadow-xl hover:shadow-amber-500/10 rounded-3xl">
-              <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-amber-50 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:from-amber-200 group-hover:to-amber-100 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-amber-500/20">
-                <Drill className="w-10 h-10 text-amber-600" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-3">
-                Power Drills
-              </h3>
-              <p className="text-slate-600 mb-4 leading-relaxed text-sm">
-                Professional cordless drills for precision work
-              </p>
-              <div className="backdrop-blur-lg text-xs px-3 py-1 bg-amber-50/70 text-amber-700 border border-amber-200/30 rounded-full">
-                From $89
-              </div>
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              {popularProducts.length > 0 ? (
+                popularProducts.map((p) => (
+                  <div
+                    key={p.id}
+                    className="relative group h-full backdrop-blur-lg border border-slate-200/30 bg-white/70 p-6 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <ProductCard
+                      product={p}
+                      className="h-full"
+                    />
+                  </div>
+                ))
+              ) : (
+                <p className="col-span-full text-center text-slate-500 py-12">
+                  Loading popular products...
+                </p>
+              )}
             </div>
-
-            <div
-              className="backdrop-blur-lg border border-slate-200/30 bg-white/70 p-8 text-center group cursor-pointer animate-float hover:animate-none hover:-translate-y-2 transition-all duration-500 shadow-lg hover:shadow-xl hover:shadow-orange-500/10 rounded-3xl "
-              style={{
-                animation: 'float 2s ease-in-out infinite',
-              }}
-            >
-              <div className="w-20 h-20 bg-gradient-to-br from-orange-100 to-orange-50 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:from-orange-200 group-hover:to-orange-100 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-orange-500/20">
-                <Hammer className="w-10 h-10 text-orange-600" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-3">Hammers</h3>
-              <p className="text-slate-600 mb-4 leading-relaxed text-sm">
-                Heavy-duty construction hammers built to last
-              </p>
-              <div className="backdrop-blur-lg text-xs px-3 py-1 bg-orange-50/70 text-orange-700 border border-orange-200/30 rounded-full">
-                From $24
-              </div>
-            </div>
-
-            <div
-              className="backdrop-blur-lg border border-slate-200/30 bg-white/70 p-8 text-center group cursor-pointer animate-float hover:animate-none hover:-translate-y-2 transition-all duration-500 shadow-lg hover:shadow-xl hover:shadow-red-500/10 rounded-3xl"
-              style={{
-                animation: 'float 4s ease-in-out infinite',
-              }}
-            >
-              <div className="w-20 h-20 bg-gradient-to-br from-red-100 to-red-50 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:from-red-200 group-hover:to-red-100 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-red-500/20">
-                <Slice className="w-10 h-10 text-red-600" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-3">Saws</h3>
-              <p className="text-slate-600 mb-4 leading-relaxed text-sm">
-                Precision cutting tools for accurate results
-              </p>
-              <div className="backdrop-blur-lg text-xs px-3 py-1 bg-red-50/70 text-red-700 border border-red-200/30 rounded-full">
-                From $45
-              </div>
-            </div>
-
-            <div
-              className="backdrop-blur-lg border border-slate-200/30 bg-white/70 p-8 text-center group cursor-pointer animate-float hover:animate-none hover:-translate-y-2 transition-all duration-500 shadow-lg hover:shadow-xl hover:shadow-amber-500/10 rounded-3xl"
-              style={{
-                animation: 'float 6s ease-in-out infinite',
-              }}
-            >
-              <div className="w-20 h-20 bg-gradient-to-br from-amber-100 to-orange-50 rounded-3xl flex items-center justify-center mx-auto mb-6 group-hover:from-amber-200 group-hover:to-orange-100 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-amber-500/20">
-                <Bolt className="w-10 h-10 text-amber-600" />
-              </div>
-              <h3 className="text-lg font-bold text-slate-800 mb-3">
-                Screwdrivers
-              </h3>
-              <p className="text-slate-600 mb-4 leading-relaxed text-sm">
-                Complete precision screwdriver sets
-              </p>
-              <div className="backdrop-blur-lg text-xs px-3 py-1 bg-amber-50/70 text-amber-700 border border-amber-200/30 rounded-full">
-                From $19
-              </div>
-            </div>
-          </div>
         </div>
       </section>
 
