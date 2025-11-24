@@ -27,6 +27,7 @@ const SIDEBAR_ITEMS = [
   },
   { id: 'products', label: 'Products', icon: Package, href: '/admin/products' },
   { id: 'orders', label: 'Orders', icon: ShoppingCart, href: '/admin/orders' },
+  { id: 'stripe', label: 'Stripe', icon: BarChart3, href: '/admin/stripe' },
   {
     id: 'categories',
     label: 'Categories',
