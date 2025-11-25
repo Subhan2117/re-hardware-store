@@ -14,3 +14,12 @@
     padding-left: var(--sidebar-width, 16rem); /* default 16rem (w-64) */
   }
 }
+
+@keyframes scrollLeft {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}

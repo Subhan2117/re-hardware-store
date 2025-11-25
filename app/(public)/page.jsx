@@ -1,9 +1,10 @@
 'use client';
+
 import { Badge } from 'lucide-react';
 import LiquidEther from '../component/background/LiquidEther';
 import { db } from '@/app/api/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
-import ProductCard from '@/app/component/ProductCard';
+import ProductPreviewCard from '@/app/component/ProductPreviewCard';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
@@ -34,9 +35,7 @@ export default function Page() {
     async function fetchPopular() {
       const snap = await getDocs(collection(db, "products"));
       const all = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-      const firstFour = all.slice(0, 4);
-      setPopularProducts(firstFour);
+      setPopularProducts(all);
     }
 
     fetchPopular();
@@ -121,24 +120,14 @@ export default function Page() {
           </div>
 
           {/** Cards */}
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {popularProducts.length > 0 ? (
-                popularProducts.map((p) => (
-                  <div
-                    key={p.id}
-                    className="relative group h-full backdrop-blur-lg border border-slate-200/30 bg-white/70 p-6 rounded-3xl shadow-lg hover:shadow-xl transition-all duration-300"
-                  >
-                    <ProductCard
-                      product={p}
-                      className="h-full"
-                    />
+            <div className="mt-10 overflow-hidden whitespace-nowrap">
+              <div className="flex animate-[scrollLeft_40s_linear_infinite]">
+                {popularProducts.concat(popularProducts).map((p, index) => (
+                  <div key={p.id + '_' + index} className="mx-4 min-w-[260px]">
+                    <ProductPreviewCard product={p} />
                   </div>
-                ))
-              ) : (
-                <p className="col-span-full text-center text-slate-500 py-12">
-                  Loading popular products...
-                </p>
-              )}
+                ))}
+              </div>
             </div>
         </div>
       </section>
