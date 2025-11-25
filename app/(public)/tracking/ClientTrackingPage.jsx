@@ -2,7 +2,6 @@
 
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
-import { mockOrders } from '@/app/mock-data/mockOrders';
 import { db } from '@/app/api/firebase/firebase';
 
 import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
@@ -54,6 +53,22 @@ export default function ClientTrackingPage() {
       }
       const orderData = orderDoc.data();
 
+      let fedexTracking = null;
+      try {
+        const fedexResp = await fetch("/api/fedex", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ trackingNumber }),
+        });
+
+        const fedexData = await fedexResp.json();
+        if (fedexData.success) {
+          fedexTracking = fedexData.trackingData;
+        }
+      } catch (err) {
+        console.error("FedEx tracking error:", err);
+      }
+
       const productPromises = (orderData.products ?? []).map(async (item) => {
         const productRef = doc(db, 'products', item.productId);
         const productSnap = await getDoc(productRef);
@@ -76,6 +91,7 @@ export default function ClientTrackingPage() {
       setSearchedOrder({
         ...orderData,
         products: productsInOrder,
+        fedex: fedexTracking,
       });
     } catch (err) {
       console.error('Error fetching order data:', err);
@@ -121,19 +137,57 @@ export default function ClientTrackingPage() {
             <h2 className="text-2xl font-semibold text-gray-900">
               Order #{searchedOrder.orderId}
             </h2>
-            <p
-              className={`mt-1 font-semibold ${
-                searchedOrder.status === 'In Transit'
-                  ? 'text-blue-600'
-                  : searchedOrder.status === 'Out for Delivery'
-                  ? 'text-yellow-600'
-                  : searchedOrder.status == 'Delivered'
-                  ? 'text-yellow-600'
-                  : 'text-red-600'
-              }`}
-            >
-              {searchedOrder.status}
-            </p>
+            {/* FedEx Tracking UI */}
+            {searchedOrder.fedex && (
+              <div className="mt-4 p-4 border rounded-md bg-gray-50">
+                <h3 className="font-semibold text-lg">FedEx Tracking</h3>
+
+                <p className="text-gray-700 font-medium mt-2">
+                  Status:{" "}
+                  {searchedOrder.fedex.output?.completeTrackResults?.[0]?.trackResults?.[0]
+                    ?.latestStatusDetail?.statusByLocale || "Unknown"}
+                </p>
+
+                <p className="text-gray-600 mt-1 text-sm">
+                  Location:{" "}
+                  {(() => {
+                    const loc =
+                      searchedOrder.fedex.output?.completeTrackResults?.[0]?.trackResults?.[0]
+                        ?.latestStatusDetail?.scanLocation;
+
+                    if (!loc) return "No location available";
+
+                    return `${loc.city ?? ""}, ${loc.stateOrProvinceCode ?? ""} ${loc.countryName ?? ""}`;
+                  })()}
+
+                </p>
+
+                <p className="text-gray-600 mt-1 text-sm">
+                  Last Updated:{" "}
+                  {searchedOrder.fedex.output?.completeTrackResults?.[0]?.trackResults?.[0]
+                    ?.latestStatusDetail?.dateAndTime || "Unavailable"}
+                </p>
+              </div>
+            )}
+            <div className="mt-1">
+              {(() => {
+                const fedexStatus =
+                  searchedOrder.fedex?.output?.completeTrackResults?.[0]?.trackResults?.[0]
+                    ?.latestStatusDetail?.statusByLocale || "Unknown";
+
+                const color =
+                  fedexStatus.includes("Transit") ? "text-blue-600" :
+                  fedexStatus.includes("Delivery") ? "text-yellow-600" :
+                  fedexStatus.includes("Delivered") ? "text-green-600" :
+                  "text-red-600";
+
+                return (
+                  <p className={`mt-1 font-semibold ${color}`}>
+                    {fedexStatus}
+                  </p>
+                );
+              })()}
+            </div>
             <p className="text-gray-600 mt-1 text-sm">
               Estimated Delivery: {searchedOrder.estimatedDelivery}
             </p>
