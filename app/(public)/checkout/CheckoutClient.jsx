@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
+import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { db } from '@/app/api/firebase/firebase';
 import { calculateTotals } from '@/app/(public)/cart/page';
 import { useCart } from '@/app/context/CartContext';
 
@@ -48,6 +50,34 @@ export default function CheckoutClient() {
       const data = await res.json();
 
       if (res.ok && data.url) {
+        // Create a pending order in Firestore so tracking numbers exist immediately.
+        try {
+          const trackingNumber = `HW${Date.now().toString().slice(-9)}`;
+          const productsForOrder = minimalItems.map((it) => ({ productId: it.id, quantity: it.quantity }));
+          const orderPayload = {
+            trackingNumber,
+            orderId: trackingNumber,
+            sessionId: data.id,
+            status: 'Pending',
+            products: productsForOrder,
+            subtotal: subtotal,
+            shipping: shipping,
+            tax: tax,
+            total: total,
+            createdAt: serverTimestamp(),
+          };
+
+          const docRef = await addDoc(collection(db, 'orders'), orderPayload);
+          // ensure orderId/trackingNumber references the saved doc id if desired
+          // (we keep the generated trackingNumber for customer-facing tracking)
+          console.log('Created pending order', docRef.id, trackingNumber);
+          // store tracking number locally so success page can show it
+          try { localStorage.setItem('lastOrderTracking', trackingNumber); } catch (e) {}
+        } catch (saveErr) {
+          console.warn('Failed to create pending order in Firestore:', saveErr);
+        }
+
+        // Redirect to Stripe Checkout after persisting pending order
         window.location.href = data.url;
       } else {
         console.error('Checkout session error:', data);
