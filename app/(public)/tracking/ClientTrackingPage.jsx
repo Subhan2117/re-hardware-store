@@ -53,45 +53,6 @@ export default function ClientTrackingPage() {
       }
       const orderData = orderDoc.data();
 
-      let fedexTracking = null;
-      try {
-        const fedexResp = await fetch("/api/fedex", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ trackingNumber }),
-        });
-
-        const fedexData = await fedexResp.json();
-        if (fedexData.success) {
-          fedexTracking = fedexData.trackingData;
-        }
-        if (fedexTracking) {
-          const trackResult =
-            fedexTracking.output?.completeTrackResults?.[0]?.trackResults?.[0];
-          
-          const fedexStatus =
-            trackResult?.latestStatusDetail?.statusByLocale || "Unknown";
-          
-          const scanLoc = trackResult?.latestStatusDetail?.scanLocation || null;
-
-          const estDelivery = 
-            trackResult?.dateAndTime?.find(t => t.type === "ESTIMATED_DELIVERY")?.dateTime || null;
-
-          try {
-            await updateDoc(doc(db, "orders", orderDoc.id), {
-              status: fedexStatus,
-              lastUpdated: new Date(),
-              fedexLocation: scanLoc,
-              estimatedDelivery: estDelivery,
-            });
-          } catch (err) {
-            console.error("Failed to sync FedEx status to Firebase:", err);
-          }
-        }
-      } catch (err) {
-        console.error("FedEx tracking error:", err);
-      }
-
       const productPromises = (orderData.products ?? []).map(async (item) => {
         const productRef = doc(db, 'products', item.productId);
         const productSnap = await getDoc(productRef);
@@ -114,7 +75,6 @@ export default function ClientTrackingPage() {
       setSearchedOrder({
         ...orderData,
         products: productsInOrder,
-        fedex: fedexTracking,
       });
     } catch (err) {
       console.error('Error fetching order data:', err);
@@ -158,61 +118,41 @@ export default function ClientTrackingPage() {
         <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 space-y-6">
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">
-              Order #{searchedOrder.orderId}
+              Order #{searchedOrder.orderId}W
             </h2>
             {/* FedEx Tracking UI */}
-            {searchedOrder.fedex && (
-              <div className="mt-4 p-4 border rounded-md bg-gray-50">
-                <h3 className="font-semibold text-lg">FedEx Tracking</h3>
+            <div className="mt-4 p-4 border rounded-md bg-gray-50">
+              <h3 className="font-semibold text-lg">Order Status</h3>
 
-                <p className="text-gray-700 font-medium mt-2">
-                  Status:{" "}
-                  {searchedOrder.fedex.output?.completeTrackResults?.[0]?.trackResults?.[0]
-                    ?.latestStatusDetail?.statusByLocale || "Unknown"}
-                </p>
+              <p className="text-gray-800 font-medium mt-2">
+                Status:{" "}
+                <span className="font-semibold capitalize">
+                  {searchedOrder.status || "Unknown"}
+                </span>
+              </p>
 
-                <p className="text-gray-600 mt-1 text-sm">
-                  Location:{" "}
-                  {(() => {
-                    const loc =
-                      searchedOrder.fedex.output?.completeTrackResults?.[0]?.trackResults?.[0]
-                        ?.latestStatusDetail?.scanLocation;
-
-                    if (!loc) return "No location available";
-
-                    return `${loc.city ?? ""}, ${loc.stateOrProvinceCode ?? ""} ${loc.countryName ?? ""}`;
-                  })()}
-
-                </p>
-
-                <p className="text-gray-600 mt-1 text-sm">
-                  Last Updated:{" "}
-                  {searchedOrder.fedex.output?.completeTrackResults?.[0]?.trackResults?.[0]
-                    ?.latestStatusDetail?.dateAndTime || "Unavailable"}
-                </p>
-              </div>
-            )}
-            <div className="mt-1">
-              {(() => {
-                const fedexStatus =
-                  searchedOrder.fedex?.output?.completeTrackResults?.[0]?.trackResults?.[0]
-                    ?.latestStatusDetail?.statusByLocale || "Unknown";
-
-                const color =
-                  fedexStatus.includes("Transit") ? "text-blue-600" :
-                  fedexStatus.includes("Delivery") ? "text-yellow-600" :
-                  fedexStatus.includes("Delivered") ? "text-green-600" :
-                  "text-red-600";
-
-                return (
-                  <p className={`mt-1 font-semibold ${color}`}>
-                    {fedexStatus}
-                  </p>
-                );
-              })()}
+              {/* timeline (optional) */}
+              {searchedOrder.events && Array.isArray(searchedOrder.events) && (
+                <div className="mt-3 space-y-1">
+                  {searchedOrder.events.map((ev, i) => (
+                    <p key={i} className="text-gray-600 text-sm">
+                      {new Date(ev.timestamp).toLocaleString()} —{" "}
+                      <span className="capitalize">{ev.status}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
             </div>
             <p className="text-gray-600 mt-1 text-sm">
-              Estimated Delivery: {searchedOrder.estimatedDelivery}
+              Order placed: {searchedOrder?.createdAt?.toDate().toLocaleDateString()}
+            </p>
+            <p className="text-gray-600 mt-1 text-sm">
+              Estimated Delivery: {
+                searchedOrder?.createdAt &&
+                new Date(
+                  searchedOrder.createdAt.toDate().getTime() + 5 * 24 * 60 * 60 * 1000
+                ).toLocaleDateString()
+              }
             </p>
           </div>
 
