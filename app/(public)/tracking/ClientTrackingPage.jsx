@@ -2,10 +2,9 @@
 
 import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
-import { mockOrders } from '@/app/mock-data/mockOrders';
 import { db } from '@/app/api/firebase/firebase';
 
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 export default function ClientTrackingPage() {
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -119,23 +118,41 @@ export default function ClientTrackingPage() {
         <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 space-y-6">
           <div>
             <h2 className="text-2xl font-semibold text-gray-900">
-              Order #{searchedOrder.orderId}
+              Order #{searchedOrder.orderId}W
             </h2>
-            <p
-              className={`mt-1 font-semibold ${
-                searchedOrder.status === 'In Transit'
-                  ? 'text-blue-600'
-                  : searchedOrder.status === 'Out for Delivery'
-                  ? 'text-yellow-600'
-                  : searchedOrder.status == 'Delivered'
-                  ? 'text-yellow-600'
-                  : 'text-red-600'
-              }`}
-            >
-              {searchedOrder.status}
+            {/* FedEx Tracking UI */}
+            <div className="mt-4 p-4 border rounded-md bg-gray-50">
+              <h3 className="font-semibold text-lg">Order Status</h3>
+
+              <p className="text-gray-800 font-medium mt-2">
+                Status:{" "}
+                <span className="font-semibold capitalize">
+                  {searchedOrder.status || "Unknown"}
+                </span>
+              </p>
+
+              {/* timeline (optional) */}
+              {searchedOrder.events && Array.isArray(searchedOrder.events) && (
+                <div className="mt-3 space-y-1">
+                  {searchedOrder.events.map((ev, i) => (
+                    <p key={i} className="text-gray-600 text-sm">
+                      {new Date(ev.timestamp).toLocaleString()} —{" "}
+                      <span className="capitalize">{ev.status}</span>
+                    </p>
+                  ))}
+                </div>
+              )}
+            </div>
+            <p className="text-gray-600 mt-1 text-sm">
+              Order placed: {searchedOrder?.createdAt?.toDate().toLocaleDateString()}
             </p>
             <p className="text-gray-600 mt-1 text-sm">
-              Estimated Delivery: {searchedOrder.estimatedDelivery}
+              Estimated Delivery: {
+                searchedOrder?.createdAt &&
+                new Date(
+                  searchedOrder.createdAt.toDate().getTime() + 5 * 24 * 60 * 60 * 1000
+                ).toLocaleDateString()
+              }
             </p>
           </div>
 
