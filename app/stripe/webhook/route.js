@@ -1,15 +1,23 @@
 import Stripe from 'stripe';
 import admin from 'firebase-admin';
+import sgMail from '@sendgrid/mail';
 
 export const runtime = 'nodejs';
 
 const stripeSecret = process.env.STRIPE_SECRET_KEY;
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+const sendgridApiKey = process.env.SENDGRID_API_KEY;
 
 if (!stripeSecret) console.warn('Stripe secret key not set (STRIPE_SECRET_KEY)');
 if (!webhookSecret) console.warn('Stripe webhook secret not set (STRIPE_WEBHOOK_SECRET)');
+if (!sendgridApiKey) console.warn('SendGrid API key not set (SENDGRID_API_KEY)');
 
 const stripe = stripeSecret ? new Stripe(stripeSecret, { apiVersion: '2024-06-20' }) : null;
+
+// Set SendGrid API key
+if (sendgridApiKey) {
+  sgMail.setApiKey(sendgridApiKey);
+}
 
 // Initialize Firebase Admin if not already
 function initFirebaseAdmin() {
@@ -23,6 +31,52 @@ function initFirebaseAdmin() {
   } catch (err) {
     console.error('Failed to initialize Firebase Admin SDK', err);
     return null;
+  }
+}
+
+// Helper function to send order confirmation email
+async function sendOrderConfirmationEmail(email, orderData) {
+  if (!sendgridApiKey) {
+    console.warn('SendGrid API key not configured; skipping email');
+    return;
+  }
+
+  try {
+    const itemsList = orderData.items
+      .map((item) => `${item.name} x${item.quantity} @ $${item.price.toFixed(2)} = $${(item.quantity * item.price).toFixed(2)}`)
+      .join('\n');
+
+    const emailHtml = `
+      <h2>Order Confirmation</h2>
+      <p>Thank you for your order!</p>
+      
+      <p><strong>Tracking Number:</strong> ${orderData.trackingNumber}</p>
+      
+      <h3>Order Items:</h3>
+      <pre>${itemsList}</pre>
+      
+      <h3>Order Summary:</h3>
+      <ul>
+        <li><strong>Subtotal:</strong> $${orderData.subtotal.toFixed(2)}</li>
+        <li><strong>Tax:</strong> $${orderData.tax.toFixed(2)}</li>
+        <li><strong>Shipping:</strong> $${orderData.shipping.toFixed(2)}</li>
+        <li><strong>Total Paid:</strong> $${orderData.total.toFixed(2)}</li>
+      </ul>
+      
+      <p>You can track your order using the tracking number above.</p>
+      <p>Thank you for your business!</p>
+    `;
+
+    await sgMail.send({
+      to: email,
+      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@re-hardware-store.com',
+      subject: `Order Confirmation - Tracking #${orderData.trackingNumber}`,
+      html: emailHtml,
+    });
+
+    console.log(`Order confirmation email sent to ${email}`);
+  } catch (err) {
+    console.error('Failed to send order confirmation email:', err);
   }
 }
 
@@ -82,6 +136,7 @@ export async function POST(req) {
             try {
               const orderDoc = await ordersRef.doc(orderId).get();
               if (orderDoc.exists) {
+                const orderData = orderDoc.data();
                 const update = {
                   status: 'Paid',
                   paidAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -91,6 +146,11 @@ export async function POST(req) {
 
                 await ordersRef.doc(orderId).update(update);
                 console.log('Updated order', orderId, 'to Paid (matched by metadata.orderId)');
+                
+                // Send confirmation email
+                if (orderData.email) {
+                  await sendOrderConfirmationEmail(orderData.email, orderData);
+                }
                 updated = true;
               }
             } catch (err) {
@@ -103,6 +163,7 @@ export async function POST(req) {
             const q = await ordersRef.where('sessionId', '==', session.id).limit(1).get();
             if (!q.empty) {
               const doc = q.docs[0];
+              const orderData = doc.data();
               const update = {
                 status: 'Paid',
                 paidAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -112,6 +173,11 @@ export async function POST(req) {
 
               await ordersRef.doc(doc.id).update(update);
               console.log('Updated order', doc.id, 'to Paid (matched by sessionId)');
+              
+              // Send confirmation email
+              if (orderData.email) {
+                await sendOrderConfirmationEmail(orderData.email, orderData);
+              }
               updated = true;
             } else {
               console.warn('No order found with sessionId=', session.id);
@@ -123,6 +189,7 @@ export async function POST(req) {
             const q = await ordersRef.where('paymentIntent', '==', paymentIntentId).limit(1).get();
             if (!q.empty) {
               const doc = q.docs[0];
+              const orderData = doc.data();
               const update = {
                 status: 'Paid',
                 paidAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -130,6 +197,11 @@ export async function POST(req) {
               };
               await ordersRef.doc(doc.id).update(update);
               console.log('Updated order', doc.id, 'to Paid (matched by paymentIntent)');
+              
+              // Send confirmation email
+              if (orderData.email) {
+                await sendOrderConfirmationEmail(orderData.email, orderData);
+              }
             } else {
               console.warn('No order found with paymentIntent=', paymentIntentId);
             }
