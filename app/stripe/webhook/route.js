@@ -59,11 +59,13 @@ export async function POST(req) {
       let session = null;
       let paymentIntentId = null;
       let amountReceived = null;
+      let orderId = null; // Firestore docId from session metadata
 
       if (event.type === 'checkout.session.completed') {
         session = event.data.object;
         paymentIntentId = session.payment_intent || null;
         amountReceived = session.amount_total ?? null;
+        orderId = session.metadata?.orderId || null; // Extract Firestore docId from metadata
       } else if (event.type === 'payment_intent.succeeded') {
         const pi = event.data.object;
         paymentIntentId = pi.id;
@@ -71,40 +73,69 @@ export async function POST(req) {
       }
 
       try {
-        if (session && db) {
-          // find order by sessionId
+        if (db) {
+          let updated = false;
           const ordersRef = db.collection('orders');
-          const q = await ordersRef.where('sessionId', '==', session.id).limit(1).get();
-          if (!q.empty) {
-            const doc = q.docs[0];
-            const update = {
-              status: 'Paid',
-              paidAt: admin.firestore.FieldValue.serverTimestamp(),
-            };
-            if (paymentIntentId) update.paymentIntent = paymentIntentId;
-            if (amountReceived != null) update.amountReceived = (Number(amountReceived) / 100);
 
-            await ordersRef.doc(doc.id).update(update);
-            console.log('Updated order', doc.id, 'to Paid');
-          } else {
-            console.warn('No order found with sessionId=', session.id);
+          // Prefer matching by orderId (metadata) if available
+          if (orderId) {
+            try {
+              const orderDoc = await ordersRef.doc(orderId).get();
+              if (orderDoc.exists) {
+                const update = {
+                  status: 'Paid',
+                  paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                };
+                if (paymentIntentId) update.paymentIntent = paymentIntentId;
+                if (amountReceived != null) update.amountReceived = (Number(amountReceived) / 100);
+
+                await ordersRef.doc(orderId).update(update);
+                console.log('Updated order', orderId, 'to Paid (matched by metadata.orderId)');
+                updated = true;
+              }
+            } catch (err) {
+              console.error('Error updating order by orderId:', err);
+            }
           }
-        } else if (paymentIntentId && db) {
-          // try to find order by paymentIntent stored previously
-          const ordersRef = db.collection('orders');
-          const q = await ordersRef.where('paymentIntent', '==', paymentIntentId).limit(1).get();
-          if (!q.empty) {
-            const doc = q.docs[0];
-            const update = {
-              status: 'Paid',
-              paidAt: admin.firestore.FieldValue.serverTimestamp(),
-              amountReceived: amountReceived != null ? Number(amountReceived) / 100 : undefined,
-            };
-            await ordersRef.doc(doc.id).update(update);
-            console.log('Updated order by paymentIntent', doc.id);
-          } else {
-            console.warn('No order found with paymentIntent=', paymentIntentId);
+
+          // Fallback: match by sessionId if not already updated
+          if (!updated && session) {
+            const q = await ordersRef.where('sessionId', '==', session.id).limit(1).get();
+            if (!q.empty) {
+              const doc = q.docs[0];
+              const update = {
+                status: 'Paid',
+                paidAt: admin.firestore.FieldValue.serverTimestamp(),
+              };
+              if (paymentIntentId) update.paymentIntent = paymentIntentId;
+              if (amountReceived != null) update.amountReceived = (Number(amountReceived) / 100);
+
+              await ordersRef.doc(doc.id).update(update);
+              console.log('Updated order', doc.id, 'to Paid (matched by sessionId)');
+              updated = true;
+            } else {
+              console.warn('No order found with sessionId=', session.id);
+            }
           }
+
+          // Fallback: match by paymentIntent if not already updated
+          if (!updated && paymentIntentId) {
+            const q = await ordersRef.where('paymentIntent', '==', paymentIntentId).limit(1).get();
+            if (!q.empty) {
+              const doc = q.docs[0];
+              const update = {
+                status: 'Paid',
+                paidAt: admin.firestore.FieldValue.serverTimestamp(),
+                amountReceived: amountReceived != null ? Number(amountReceived) / 100 : undefined,
+              };
+              await ordersRef.doc(doc.id).update(update);
+              console.log('Updated order', doc.id, 'to Paid (matched by paymentIntent)');
+            } else {
+              console.warn('No order found with paymentIntent=', paymentIntentId);
+            }
+          }
+        } else {
+          console.error('No Firestore instance available to update orders');
         }
       } catch (err) {
         console.error('Failed updating order on webhook', err);
