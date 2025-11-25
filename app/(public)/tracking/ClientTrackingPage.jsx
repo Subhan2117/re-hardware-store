@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import { db } from '@/app/api/firebase/firebase';
 
-import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 
 export default function ClientTrackingPage() {
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -64,6 +64,29 @@ export default function ClientTrackingPage() {
         const fedexData = await fedexResp.json();
         if (fedexData.success) {
           fedexTracking = fedexData.trackingData;
+        }
+        if (fedexTracking) {
+          const trackResult =
+            fedexTracking.output?.completeTrackResults?.[0]?.trackResults?.[0];
+          
+          const fedexStatus =
+            trackResult?.latestStatusDetail?.statusByLocale || "Unknown";
+          
+          const scanLoc = trackResult?.latestStatusDetail?.scanLocation || null;
+
+          const estDelivery = 
+            trackResult?.dateAndTime?.find(t => t.type === "ESTIMATED_DELIVERY")?.dateTime || null;
+
+          try {
+            await updateDoc(doc(db, "orders", orderDoc.id), {
+              status: fedexStatus,
+              lastUpdated: new Date(),
+              fedexLocation: scanLoc,
+              estimatedDelivery: estDelivery,
+            });
+          } catch (err) {
+            console.error("Failed to sync FedEx status to Firebase:", err);
+          }
         }
       } catch (err) {
         console.error("FedEx tracking error:", err);
