@@ -1,6 +1,8 @@
 'use client';
 
 import { useMemo } from 'react';
+import { addDoc, collection, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { db } from '@/app/api/firebase/firebase';
 import { calculateTotals } from '@/app/(public)/cart/page';
 import { useCart } from '@/app/context/CartContext';
 
@@ -35,6 +37,30 @@ export default function CheckoutClient() {
         quantity: item.quantity,
       }));
 
+      // 1. Create pending order in Firestore FIRST to get a docId
+      let firestoreDocId = null;
+      try {
+        const productsForOrder = minimalItems.map((it) => ({ productId: it.id, quantity: it.quantity }));
+        const orderPayload = {
+          status: 'Pending',
+          products: productsForOrder,
+          subtotal: subtotal,
+          shipping: shipping,
+          tax: tax,
+          total: total,
+          createdAt: serverTimestamp(),
+        };
+
+        const docRef = await addDoc(collection(db, 'orders'), orderPayload);
+        firestoreDocId = docRef.id;
+        console.log('Created pending order with docId:', firestoreDocId);
+      } catch (saveErr) {
+        console.warn('Failed to create pending order in Firestore:', saveErr);
+        alert('Failed to create order. Please try again.');
+        return;
+      }
+
+      // 2. Create Stripe Checkout session and pass the docId in metadata
       const res = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -42,12 +68,32 @@ export default function CheckoutClient() {
           items: minimalItems,
           shipping,
           tax,
+          orderId: firestoreDocId, // Pass the Firestore docId for webhook matching
         }),
       });
 
       const data = await res.json();
 
       if (res.ok && data.url) {
+        // 3. Use Stripe's sessionId as the trackingNumber
+        const trackingNumber = data.id; // Stripe sessionId becomes the customer-facing tracking number
+        
+        // Update the Firestore order with the sessionId and trackingNumber
+        try {
+          const orderRef = doc(db, 'orders', firestoreDocId);
+          await updateDoc(orderRef, {
+            sessionId: data.id,
+            trackingNumber: trackingNumber, // Use Stripe sessionId as tracking number
+          });
+          console.log('Updated order with sessionId/trackingNumber:', trackingNumber);
+        } catch (updateErr) {
+          console.warn('Failed to update order with sessionId:', updateErr);
+        }
+
+        // Store tracking number locally so success page can show it
+        try { localStorage.setItem('lastOrderTracking', trackingNumber); } catch (e) {}
+
+        // Redirect to Stripe Checkout after persisting and linking order
         window.location.href = data.url;
       } else {
         console.error('Checkout session error:', data);

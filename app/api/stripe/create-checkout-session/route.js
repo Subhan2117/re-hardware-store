@@ -15,7 +15,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { items, shipping, tax, contact, shippingDetails } = body; // [{ id, name, price, quantity }, ...]
+    const { items, shipping, tax, contact, shippingDetails, orderId } = body; // [{ id, name, price, quantity }, ...]
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -100,6 +100,7 @@ export async function POST(req) {
 
       // 🔥 Attach everything else as metadata for webhooks / Firestore later
       metadata: {
+        orderId: orderId || '', // Firestore docId for reliable webhook matching
         firstName: contact?.firstName || '',
         lastName: contact?.lastName || '',
         phone: contact?.phone || '',
