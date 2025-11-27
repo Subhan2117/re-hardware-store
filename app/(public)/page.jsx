@@ -9,9 +9,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Hammer,
-  Drill,
-  Slice,
-  Bolt,
   Wrench,
   Paintbrush,
   MapPin,
@@ -28,21 +25,18 @@ import {
 import Searchbar from '../component/Searchbar';
 
 export default function Page() {
-
   const [popularProducts, setPopularProducts] = useState([]);
 
   useEffect(() => {
     async function fetchPopular() {
-      const snap = await getDocs(collection(db, "products"));
-      const all = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const snap = await getDocs(collection(db, 'products'));
+      const all = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       setPopularProducts(all);
     }
 
     fetchPopular();
   }, []);
 
-  
-  
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden">
       {/** NavaBar */}
@@ -120,15 +114,15 @@ export default function Page() {
           </div>
 
           {/** Cards */}
-            <div className="mt-10 overflow-hidden whitespace-nowrap">
-              <div className="flex animate-[scrollLeft_40s_linear_infinite]">
-                {popularProducts.concat(popularProducts).map((p, index) => (
-                  <div key={p.id + '_' + index} className="mx-4 min-w-[260px]">
-                    <ProductPreviewCard product={p} />
-                  </div>
-                ))}
-              </div>
+          <div className="mt-10 overflow-hidden whitespace-nowrap">
+            <div className="flex animate-[scrollLeft_40s_linear_infinite]">
+              {popularProducts.concat(popularProducts).map((p, index) => (
+                <div key={p.id + '_' + index} className="mx-4 min-w-[260px]">
+                  <ProductPreviewCard product={p} />
+                </div>
+              ))}
             </div>
+          </div>
         </div>
       </section>
 
