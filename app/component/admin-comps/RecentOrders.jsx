@@ -119,11 +119,11 @@ export default function RecentOrders({ orders: initialOrders = null }) {
           orders.map((order) => (
             <div
               key={order.id}
-              className="flex items-center justify-between p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-all border border-orange-100"
+              className="flex items-center justify-between p-3 rounded-lg bg-orange-50 hover:bg-orange-100 transition-all border border-orange-100 overflow-hidden"
             >
-              <div className="flex-1">
-                <div className="font-semibold text-gray-900 text-sm">{order.id}</div>
-                <div className="text-xs text-gray-600">{order.customer}</div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-gray-900 text-sm truncate" title={order.id}>{order.id}</div>
+                <div className="text-xs text-gray-600 truncate" title={order.customer}>{order.customer}</div>
               </div>
               <div className="text-right">
                 <div className="font-bold text-gray-900">${order.amount}</div>

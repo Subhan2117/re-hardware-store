@@ -1,15 +1,37 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 
-const DEFAULT_SALES = [
-  { month: 'Jan', sales: 4200 },
-  { month: 'Feb', sales: 3800 },
-  { month: 'Mar', sales: 5100 },
-  { month: 'Apr', sales: 4600 },
-  { month: 'May', sales: 6200 },
-  { month: 'Jun', sales: 7800 },
-];
+// Helper function to format month from 'YYYY-MM' to short month name
+const formatMonth = (dateStr) => {
+  const date = new Date(dateStr);
+  return date.toLocaleString('default', { month: 'short' });
+};
+
+// Helper function to get last 6 months data
+const getLastSixMonthsData = (data) => {
+  const result = [];
+  const now = new Date();
+  
+  // Create array of last 6 months
+  for (let i = 5; i >= 0; i--) {
+    const date = new Date(now);
+    date.setMonth(now.getMonth() - i);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const key = `${year}-${month}`;
+    const monthName = date.toLocaleString('default', { month: 'short' });
+    
+    // Find matching data or default to 0
+    const monthData = data.find(item => item[0] === key);
+    result.push({
+      month: monthName,
+      sales: monthData ? monthData[1] : 0
+    });
+  }
+  
+  return result;
+};
 
 const round = (n, p = 3) => Number(n.toFixed(p));
 const toRad = (deg) => (deg * Math.PI) / 180;
@@ -28,35 +50,106 @@ function makeTicks(max) {
   return Array.from({ length: steps + 1 }, (_, i) => Math.round(i * step));
 }
 
-export default function SalesOverview({ data = DEFAULT_SALES }) {
+export default function SalesOverview() {
+  const [salesData, setSalesData] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [hoverIdx, setHoverIdx] = useState(null);
 
-  const { maxSales, ticks, points, linePath, bars, months } = useMemo(() => {
-    const months = data.map((d) => d.month);
-    const maxSales = Math.max(...data.map((d) => d.sales), 1);
+  // Calculate chart data using useMemo to avoid unnecessary recalculations
+  const { maxSales, ticks, points, linePath, bars, months, viewBox } = useMemo(() => {
+    // Use salesData or fallback to empty array
+    const dataToUse = salesData.length > 0 ? salesData : [];
+    const months = dataToUse.map((d) => d.month);
+    const maxSales = Math.max(...dataToUse.map((d) => d.sales), 1);
     const ticks = makeTicks(maxSales);
 
-    // normalized coordinates (0..100) for SVG
-    const xs = data.map((_, i) => (i / (data.length - 1)) * 100);
-    const ys = data.map((d) => 100 - (d.sales / ticks[ticks.length - 1]) * 100);
+    // Calculate x coordinates with padding on both ends
+    const xs = dataToUse.map((_, i) => {
+      if (dataToUse.length <= 1) return 50; // Center single point
+      // Distribute points with 5% padding on each side
+      const padding = 0.05; // 5% padding on each side (0.05 = 5%)
+      const range = 1 - (padding * 2);
+      return (padding + (i / (dataToUse.length - 1)) * range) * 100;
+    });
+    
+    const ys = dataToUse.map((d) => 100 - (d.sales / maxSales) * 100);
+
+    // Create viewBox with slight padding for the line
+    const viewBox = `0 0 100 100`;
 
     // Polyline points (rounded to avoid SSR float drift)
     const points = xs.map((x, i) => `${round(x)},${round(ys[i])}`);
 
     // Smooth-ish path using simple quadratic beziers (optional):
-    // For simplicity/robustness we’ll stick to polyline; path shown as comment if you want later.
+    // For simplicity/robustness we'll stick to polyline; path shown as comment if you want later.
     const linePath = null;
 
     // bars: height % relative to tick max (not raw max), for alignment with axis
-    const bars = data.map((d) => (d.sales / ticks[ticks.length - 1]) * 100);
+    const bars = dataToUse.map((d) => (d.sales / ticks[ticks.length - 1]) * 100);
 
-    return { maxSales, ticks, points, linePath, bars, months };
-  }, [data]);
+    return { maxSales, ticks, points, linePath, bars, months, viewBox };
+  }, [salesData]);
+
+  useEffect(() => {
+    const fetchSalesData = async () => {
+      try {
+        const response = await fetch('/api/admin/stripe/revenue?period=month&days=180');
+        if (!response.ok) {
+          throw new Error('Failed to fetch sales data');
+        }
+        const data = await response.json();
+        // Transform the data to match the expected format
+        const formattedData = getLastSixMonthsData(data.revenueByPeriod || []);
+        setSalesData(formattedData);
+      } catch (err) {
+        console.error('Error fetching sales data:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchSalesData();
+  }, []);
+
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="bg-white border border-orange-100 rounded-xl shadow-lg">
+        <div className="p-5 border-b border-orange-100">
+          <div className="text-gray-900 font-semibold">Sales Overview</div>
+          <div className="text-gray-600 text-sm">Loading sales data...</div>
+        </div>
+        <div className="p-5 flex items-center justify-center h-64">
+          <div className="animate-pulse text-gray-500">Loading chart data...</div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="bg-white border border-orange-100 rounded-xl shadow-lg">
+        <div className="p-5 border-b border-orange-100">
+          <div className="text-gray-900 font-semibold">Sales Overview</div>
+          <div className="text-red-600 text-sm">Error loading sales data</div>
+        </div>
+        <div className="p-5 text-red-600">
+          <p>Failed to load sales data. Please try again later.</p>
+          <p className="text-sm text-gray-500 mt-2">{error}</p>
+        </div>
+      </div>
+    );
+  }
 
   // layout constants
-  const axisWidthPx = 56; // left gutter for y-axis
+  const axisWidthPx = 56; // Left gutter for y-axis
   const chartHeightPx = 256; // h-64
-  const barGapPx = 12;
+  const barGapPx = 12; // Gap between bars
+  const chartPadding = 12; // Padding around chart
+  const barWidth = `calc((100% - ${chartPadding * 2}px - ${(salesData.length - 1) * barGapPx}px) / ${salesData.length})`;
 
   return (
     <div className="bg-white border border-orange-100 rounded-xl shadow-lg">
@@ -93,11 +186,22 @@ export default function SalesOverview({ data = DEFAULT_SALES }) {
 
           {/* Bars (behind), offset by axis width */}
           <div
-            className="absolute inset-x-0 bottom-6 flex items-end"
-            style={{ left: axisWidthPx, gap: barGapPx, right: 0 }}
+            className="absolute inset-x-0 bottom-6 flex items-end justify-center"
+            style={{
+              left: axisWidthPx,
+              right: chartPadding,
+              padding: `0 ${chartPadding}px`
+            }}
           >
             {bars.map((pct, i) => (
-              <div key={i} className="flex-1 flex items-end">
+              <div 
+                key={i} 
+                className="flex items-end"
+                style={{
+                  width: barWidth,
+                  marginRight: i < bars.length - 1 ? `${barGapPx}px` : 0
+                }}
+              >
                 <div
                   className="w-full bg-gradient-to-t from-orange-500 to-amber-400 rounded-t-md shadow-sm transition-transform hover:scale-[1.02]"
                   style={{ height: `${pct}%` }}
@@ -110,10 +214,15 @@ export default function SalesOverview({ data = DEFAULT_SALES }) {
 
           {/* Line overlay (SVG) */}
           <svg
-            viewBox="0 0 100 100"
+            viewBox={viewBox}
             preserveAspectRatio="none"
-            className="absolute inset-x-0 top-0 w-[calc(100%-56px)] h-[calc(100%-24px)]"
-            style={{ left: axisWidthPx }} // respect axis gutter
+            className="absolute inset-x-0 top-0 h-[calc(100%-24px)]"
+            style={{
+              left: axisWidthPx,
+              width: `calc(100% - ${axisWidthPx}px)`,
+              padding: `0 ${chartPadding}px`,
+              overflow: 'visible'
+            }}
           >
             {/* optional area fill under line */}
             <defs>
@@ -150,7 +259,7 @@ export default function SalesOverview({ data = DEFAULT_SALES }) {
                   <circle cx={x} cy={y} r="1.4" fill="#f97316" stroke="#fff" strokeWidth="0.4" />
                   {/* Larger invisible hover area for easier interaction */}
                   <circle
-                    cx={x}
+                    cx={x + 2}  // Adjust x position of hover targets to match line
                     cy={y}
                     r="3.5"
                     fill="transparent"
@@ -163,9 +272,22 @@ export default function SalesOverview({ data = DEFAULT_SALES }) {
           </svg>
 
           {/* X-axis labels (months) */}
-          <div className="absolute bottom-0 left-[56px] right-0 flex justify-between text-xs text-gray-500">
-            {months.map((m) => (
-              <span key={m} className="px-1">{m}</span>
+          <div 
+            className="absolute bottom-0 left-0 right-0 flex justify-between px-2 text-xs text-gray-500"
+            style={{ left: axisWidthPx, right: chartPadding }}
+          >
+            {months.map((m, i) => (
+              <div 
+                key={m} 
+                className="text-center"
+                style={{
+                  width: `${100 / (months.length || 1)}%`,
+                  padding: '0 4px',
+                  transform: 'translateX(0)'
+                }}
+              >
+                {m}
+              </div>
             ))}
           </div>
 
@@ -176,7 +298,7 @@ export default function SalesOverview({ data = DEFAULT_SALES }) {
               axisWidth={axisWidthPx}
               chartHeight={chartHeightPx}
               months={months}
-              data={data}
+              data={salesData}
               ticks={ticks}
             />
           )}
