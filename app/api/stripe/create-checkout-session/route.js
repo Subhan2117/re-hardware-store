@@ -1,8 +1,29 @@
-// app/api/stripe/create-checkout-session/route.ts (or .js)
+// app/api/stripe/create-checkout-session/route.js
 import { NextResponse } from 'next/server';
-import stripe from '@/app/lib/stripe';
+import Stripe from 'stripe';
+import admin from 'firebase-admin';
 
 export const runtime = 'nodejs';
+
+const stripeSecret = process.env.STRIPE_SECRET_KEY;
+if (!stripeSecret) console.warn('STRIPE_SECRET_KEY not set in env');
+
+const stripe = stripeSecret ? new Stripe(stripeSecret, { apiVersion: '2024-06-20' }) : null;
+
+// Initialize Firebase Admin for server-side Firestore writes (uses GOOGLE_APPLICATION_CREDENTIALS or environment-provided service account)
+function initFirebaseAdmin() {
+  try {
+    if (!admin.apps.length) {
+      // admin will use GOOGLE_APPLICATION_CREDENTIALS or environment credentials provided by hosting platform
+      admin.initializeApp();
+      console.log('Firebase Admin initialized in create-checkout-session route');
+    }
+    return admin.firestore();
+  } catch (err) {
+    console.error('Failed to initialize Firebase Admin:', err);
+    return null;
+  }
+}
 
 export async function POST(req) {
   try {
@@ -15,13 +36,12 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { items, shipping, tax, contact, shippingDetails } = body; // [{ id, name, price, quantity }, ...]
+    const { items, shipping, tax, contact, shippingDetails, orderId, userId } = body;
+    // contact: { firstName, lastName, email, phone }
+    // shippingDetails: { street, city, state, zip, country, line2 }
 
     if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json(
-        { error: 'No items to checkout' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No items to checkout' }, { status: 400 });
     }
 
     const line_items = items
@@ -45,11 +65,9 @@ export async function POST(req) {
       .filter(Boolean);
 
     if (!line_items.length) {
-      return NextResponse.json(
-        { error: 'No valid items found for checkout' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'No valid items found for checkout' }, { status: 400 });
     }
+
     const taxAmount = Math.round(Number(tax || 0) * 100);
     if (taxAmount > 0) {
       line_items.push({
@@ -57,9 +75,7 @@ export async function POST(req) {
         price_data: {
           currency: 'usd',
           unit_amount: taxAmount,
-          product_data: {
-            name: 'Sales Tax',
-          },
+          product_data: { name: 'Sales Tax' },
         },
       });
     }
@@ -69,25 +85,39 @@ export async function POST(req) {
       process.env.NEXT_PUBLIC_APP_URL ||
       'http://localhost:3000';
 
+    // Build metadata (keep small — avoid large address blobs)
+    const metadata = {
+      orderId: orderId || '',
+      firstName: contact?.firstName || '',
+      lastName: contact?.lastName || '',
+      phone: contact?.phone || '',
+      // shipping fields (small values ok)
+      street: shippingDetails?.street || '',
+      line2: shippingDetails?.line2 || '',
+      city: shippingDetails?.city || '',
+      state: shippingDetails?.state || '',
+      zip: shippingDetails?.zip || '',
+      country: shippingDetails?.country || '',
+      // include a compact cart snapshot (stringified) for email/quick lookup
+      cart: JSON.stringify(items ?? []),
+    };
+
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       payment_method_types: ['card'],
       line_items,
-      // 🔥 ask Stripe Checkout to collect address (optional but usually desired)
       shipping_address_collection: {
-        allowed_countries: ['US'], // adjust as needed
+        allowed_countries: ['US'],
       },
-      // 🔥 define a shipping option using the amount from frontend
       shipping_options: [
         {
           shipping_rate_data: {
             display_name: 'Standard Shipping',
             type: 'fixed_amount',
             fixed_amount: {
-              amount: Math.round(Number(shipping) * 100), // dollars -> cents
+              amount: Math.round(Number(shipping || 0) * 100),
               currency: 'usd',
             },
-            // optional: estimated delivery
             delivery_estimate: {
               minimum: { unit: 'business_day', value: 2 },
               maximum: { unit: 'business_day', value: 5 },
@@ -95,29 +125,59 @@ export async function POST(req) {
           },
         },
       ],
-      // 🔥 Use the email so Stripe can send its own receipt
       customer_email: contact?.email || undefined,
-
-      // 🔥 Attach everything else as metadata for webhooks / Firestore later
-      metadata: {
-        firstName: contact?.firstName || '',
-        lastName: contact?.lastName || '',
-        phone: contact?.phone || '',
-        street: shippingDetails?.street || '',
-        city: shippingDetails?.city || '',
-        state: shippingDetails?.state || '',
-        zip: shippingDetails?.zip || '',
-        cart: JSON.stringify(items ?? []),
-      },
-
+      metadata,
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout`,
     });
 
-    // 🔴 OLD: return only id
-    // return NextResponse.json({ id: session.id });
+    // If an orderId is provided, write the user/shipping info server-side to Firestore (merge)
+    if (orderId) {
+      try {
+        const db = initFirebaseAdmin();
+        if (db) {
+          const orderRef = db.collection('orders').doc(orderId);
 
-    // ✅ NEW: return url (and id if you still want)
+          // Build shippingAddress object from shippingDetails/contact
+          const shippingAddress = {
+            name:
+              (contact?.firstName || '') + (contact?.lastName ? ` ${contact.lastName}` : '') ||
+              shippingDetails?.name ||
+              null,
+            line1: shippingDetails?.street || '',
+            line2: shippingDetails?.line2 || '',
+            city: shippingDetails?.city || '',
+            state: shippingDetails?.state || '',
+            postalCode: shippingDetails?.zip || '',
+            country: shippingDetails?.country || '',
+            phone: contact?.phone || null,
+          };
+
+          // Build fields to merge
+          const toMerge = {
+            // keep existing status as-is; only add mapping fields
+            userId: userId || null,
+            userName: contact?.firstName || contact?.email || null,
+            userEmail: contact?.email || null,
+            shippingAddress,
+            // also store a serverTimestamp of this "pre-checkout" attach
+            checkoutSessionCreatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            // Persist stripe sessionId reference so webhook matching has another option
+            sessionId: session.id,
+          };
+
+          // Use set with merge to avoid overriding other fields unintentionally
+          await orderRef.set(toMerge, { merge: true });
+          console.log('Merged user/shipping info into order', orderId);
+        } else {
+          console.warn('Skipping Firestore order merge — admin not initialized');
+        }
+      } catch (err) {
+        console.error('Failed to merge user/shipping info into order doc:', err);
+      }
+    }
+
+    // Return the session id & url
     return NextResponse.json({ id: session.id, url: session.url });
   } catch (err) {
     console.error('Error creating checkout session:', err);
