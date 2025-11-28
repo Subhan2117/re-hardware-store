@@ -30,7 +30,7 @@ function initFirebaseAdmin() {
     console.error('Failed to initialize Firebase Admin SDK', err);
     return null;
   }
-}
+} 
 
 // Build an items array for email from available sources
 function buildItemsForEmail(orderDocData = {}, metadata = {}) {
