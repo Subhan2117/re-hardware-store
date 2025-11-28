@@ -80,6 +80,29 @@ export default function SuccessPage() {
         >
           Back to Store
         </a>
+
+        {order?.customer?.address && (
+        <div className="mt-3 text-sm text-slate-700">
+          <p className="font-medium">Shipping to</p>
+          <p>{order.customer.firstName} {order.customer.lastName}</p>
+          <p>{order.customer.address.street}</p>
+          <p>{order.customer.address.city}, {order.customer.address.state} {order.customer.address.zip}</p>
+        </div>
+        )}
+
+
+        {order?.trackingEvents?.length ? (
+        <ul className="mt-3 divide-y">
+          {order.trackingEvents.map((ev, i) => (
+            <li key={i} className="py-2">
+              <div className="text-xs text-slate-500">{ev.timestamp}</div>
+              <div className="text-sm font-medium">{ev.status}</div>
+              <div className="text-sm text-slate-600">{ev.description}</div>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      
       </div>
     </main>
   );
