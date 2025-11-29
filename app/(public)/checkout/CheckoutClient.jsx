@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { addDoc, collection, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
+import { addDoc, collection, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '@/app/api/firebase/firebase';
 import { calculateTotals } from '@/app/(public)/cart/page';
 import { useCart } from '@/app/context/CartContext';

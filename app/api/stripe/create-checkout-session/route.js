@@ -36,9 +36,13 @@ export async function POST(req) {
     }
 
     const body = await req.json();
+<<<<<<< HEAD
     const { items, shipping, tax, contact, shippingDetails, orderId, userId } = body;
     // contact: { firstName, lastName, email, phone }
     // shippingDetails: { street, city, state, zip, country, line2 }
+=======
+    const { items, shipping, tax, contact, shippingDetails, orderId } = body; // [{ id, name, price, quantity }, ...]
+>>>>>>> 7adb2b9f26f563faa44fc2d70baa7b53557c1c9e
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json({ error: 'No items to checkout' }, { status: 400 });
@@ -126,7 +130,24 @@ export async function POST(req) {
         },
       ],
       customer_email: contact?.email || undefined,
+<<<<<<< HEAD
       metadata,
+=======
+
+      // 🔥 Attach everything else as metadata for webhooks / Firestore later
+      metadata: {
+        orderId: orderId || '', // Firestore docId for reliable webhook matching
+        firstName: contact?.firstName || '',
+        lastName: contact?.lastName || '',
+        phone: contact?.phone || '',
+        street: shippingDetails?.street || '',
+        city: shippingDetails?.city || '',
+        state: shippingDetails?.state || '',
+        zip: shippingDetails?.zip || '',
+        cart: JSON.stringify(items ?? []),
+      },
+
+>>>>>>> 7adb2b9f26f563faa44fc2d70baa7b53557c1c9e
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout`,
     });

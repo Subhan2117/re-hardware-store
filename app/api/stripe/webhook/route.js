@@ -154,6 +154,7 @@ async function sendOrderConfirmationEmail(email, orderData) {
   }
 }
 
+<<<<<<< HEAD
 /**
  * ---------- FedEx helpers (server)
  * Minimal sandbox flow:
@@ -285,6 +286,9 @@ function extractTrackingNumberFromFedexResponse(fedexResp) {
 /**
  * ---------- WEBHOOK ROUTE ----------
  */
+=======
+// ---------- WEBHOOK ROUTE ----------
+>>>>>>> 7adb2b9f26f563faa44fc2d70baa7b53557c1c9e
 export async function POST(req) {
   try {
     const sig = req.headers.get('stripe-signature');
@@ -372,6 +376,7 @@ export async function POST(req) {
       };
     }
 
+<<<<<<< HEAD
     // --- ensure Firestore order has sessionId, payment and customer info ---
     try {
       if (db) {
@@ -557,6 +562,8 @@ export async function POST(req) {
       } catch (e) { console.error('Also failed to write fedexError', e); }
     }
 
+=======
+>>>>>>> 7adb2b9f26f563faa44fc2d70baa7b53557c1c9e
     // --- 3) Decide which email to use ---
     const email =
       orderData.email ||
