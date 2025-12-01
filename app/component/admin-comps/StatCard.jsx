@@ -57,15 +57,13 @@ export default function StatCards({ stats: initialStats = DEFAULT_STATS }) {
     let mounted = true;
     async function fetchStats() {
       try {
-        // Lifetime totals (keep existing behavior)
+        // Fetch total revenue from Stripe API
+        const revenueResponse = await fetch('/api/admin/stripe/revenue?period=all');
+        const revenueData = await revenueResponse.json();
+        const totalRevenue = revenueData.totalRevenue || 0;
+        
+        // Get order count from Firestore
         const ordersSnap = await getDocs(collection(db, 'orders'));
-        let revenue = 0;
-        ordersSnap.forEach((doc) => {
-          const data = doc.data();
-          const value = data?.total ?? data?.amount ?? 0;
-          const num = typeof value === 'number' ? value : parseFloat(value) || 0;
-          revenue += num;
-        });
         const ordersCount = ordersSnap.size;
 
         const productsSnap = await getDocs(collection(db, 'products'));
@@ -82,33 +80,63 @@ export default function StatCards({ stats: initialStats = DEFAULT_STATS }) {
 
         // Month boundaries for percentage calculations
         const now = new Date();
+        // Calculate date ranges for full months comparison
         const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
         const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
         const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        const prevMonthEnd = currentMonthStart;
+        const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+        
+        // Convert to Firestore Timestamps
         const currentMonthStartTS = Timestamp.fromDate(currentMonthStart);
         const nextMonthStartTS = Timestamp.fromDate(nextMonthStart);
         const prevMonthStartTS = Timestamp.fromDate(prevMonthStart);
         const prevMonthEndTS = Timestamp.fromDate(prevMonthEnd);
-
-        // Current and previous month orders (for revenue and orders pct)
+        
+        // Get full month data for current and previous months
+        const [currentMonthResponse, prevMonthResponse] = await Promise.all([
+          fetch(`/api/admin/stripe/revenue?period=month&months=1`),
+          fetch(`/api/admin/stripe/revenue?period=month&months=1&endMonth=1`)
+        ]);
+        
+        const currentMonthData = await currentMonthResponse.json();
+        const prevMonthData = await prevMonthResponse.json();
+        
+        // Get the full month revenues
+        const currMonthRevenue = currentMonthData.totalRevenue || 0;
+        const prevMonthRevenue = prevMonthData.totalRevenue || 0;
+        
+        console.log('Current month full revenue:', currMonthRevenue);
+        console.log('Previous month full revenue:', prevMonthRevenue);
+        
+        // For the current partial month, get the daily average to project full month
+        const currentDayOfMonth = now.getDate();
+        const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const daysRemainingInMonth = daysInCurrentMonth - currentDayOfMonth;
+        
+        // Get current month's data up to today
+        const currentPartialResponse = await fetch(`/api/admin/stripe/revenue?period=day&days=${currentDayOfMonth}`);
+        const currentPartialData = await currentPartialResponse.json();
+        const currentPartialRevenue = currentPartialData.totalRevenue || 0;
+        
+        // Calculate projected full month revenue based on current daily average
+        const dailyAverage = currentPartialRevenue / currentDayOfMonth;
+        const projectedFullMonthRevenue = dailyAverage * daysInCurrentMonth;
+        
+        console.log('Current partial revenue:', currentPartialRevenue);
+        console.log('Projected full month revenue:', projectedFullMonthRevenue);
+        
+        // Use the higher of actual or projected for current month
+        const currRevenue = Math.max(currMonthRevenue, projectedFullMonthRevenue);
+        const prevRevenue = prevMonthRevenue;
+        
+        console.log('Using current revenue:', currRevenue);
+        console.log('Using previous revenue:', prevRevenue);
+        
+        // Get order counts for percentage calculation
         const ordersRef = collection(db, 'orders');
         const qCurrOrders = query(ordersRef, where('createdAt', '>=', currentMonthStartTS), where('createdAt', '<', nextMonthStartTS));
         const qPrevOrders = query(ordersRef, where('createdAt', '>=', prevMonthStartTS), where('createdAt', '<', prevMonthEndTS));
         const [currOrdersSnap, prevOrdersSnap] = await Promise.all([getDocs(qCurrOrders), getDocs(qPrevOrders)]);
-
-        let currRevenue = 0;
-        currOrdersSnap.forEach((d) => {
-          const data = d.data();
-          const v = data?.total ?? data?.amount ?? 0;
-          currRevenue += typeof v === 'number' ? v : parseFloat(v) || 0;
-        });
-        let prevRevenue = 0;
-        prevOrdersSnap.forEach((d) => {
-          const data = d.data();
-          const v = data?.total ?? data?.amount ?? 0;
-          prevRevenue += typeof v === 'number' ? v : parseFloat(v) || 0;
-        });
 
         const currOrdersCount = currOrdersSnap.size;
         const prevOrdersCount = prevOrdersSnap.size;
@@ -123,17 +151,24 @@ export default function StatCards({ stats: initialStats = DEFAULT_STATS }) {
 
         // percent change helper
         const pctChange = (prev, curr) => {
-          if (prev === 0) return curr === 0 ? 0 : 100;
-          return Math.round(((curr - prev) / Math.abs(prev)) * 1000) / 10; // one decimal
+          if (prev === 0) return curr === 0 ? 0 : 100; // 100% increase if previous was 0 and current > 0
+          const change = ((curr - prev) / Math.abs(prev)) * 100;
+          // Round to nearest integer for cleaner display
+          return Math.round(change);
         };
 
+        // Debug logs
+        console.log('Current month revenue (partial):', currRevenue);
+        console.log('Previous month equivalent revenue:', prevRevenue);
+        
         const revenuePct = pctChange(prevRevenue, currRevenue);
+        console.log('Revenue percentage change:', revenuePct, '%');
         const ordersPct = pctChange(prevOrdersCount, currOrdersCount);
         const productsPct = pctChange(prevTotal, currTotal);
 
         if (mounted) {
           setStats({
-            revenue: Math.round(revenue),
+            revenue: Math.round(totalRevenue),
             orders: ordersCount,
             products: productsCount,
             categories: categoriesCount,
@@ -142,7 +177,7 @@ export default function StatCards({ stats: initialStats = DEFAULT_STATS }) {
         }
       } catch (err) {
         // keep defaults on error
-        // console.error('Failed to fetch stats', err);
+        console.error('Failed to fetch stats', err);
       }
     }
     fetchStats();

@@ -27,18 +27,48 @@ export default function GrowthCard() {
       setLoading(true);
       try {
         const now = new Date();
-  const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-  const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const prevMonthEnd = currentMonthStart;
+        const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+        const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
 
-  // Convert to Firestore Timestamps for reliable querying against Timestamp fields
-  const currentMonthStartTS = Timestamp.fromDate(currentMonthStart);
-  const nextMonthStartTS = Timestamp.fromDate(nextMonthStart);
-  const prevMonthStartTS = Timestamp.fromDate(prevMonthStart);
-  const prevMonthEndTS = Timestamp.fromDate(prevMonthEnd);
+        // Convert to Firestore Timestamps for reliable querying against Timestamp fields
+        const currentMonthStartTS = Timestamp.fromDate(currentMonthStart);
+        const nextMonthStartTS = Timestamp.fromDate(nextMonthStart);
+        const prevMonthStartTS = Timestamp.fromDate(prevMonthStart);
+        const prevMonthEndTS = Timestamp.fromDate(prevMonthEnd);
 
-        // Orders: revenue and unique customers per month
+        // Fetch revenue data from Stripe API (same as StatCard)
+        const [currentMonthResponse, prevMonthResponse] = await Promise.all([
+          fetch(`/api/admin/stripe/revenue?period=month&months=1`),
+          fetch(`/api/admin/stripe/revenue?period=month&months=1&endMonth=1`)
+        ]);
+        
+        const currentMonthData = await currentMonthResponse.json();
+        const prevMonthData = await prevMonthResponse.json();
+        
+        // Get the full month revenues
+        const currMonthRevenue = currentMonthData.totalRevenue || 0;
+        const prevMonthRevenue = prevMonthData.totalRevenue || 0;
+        
+        // For the current partial month, get the daily average to project full month
+        const currentDayOfMonth = now.getDate();
+        const daysInCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        
+        // Get current month's data up to today
+        const currentPartialResponse = await fetch(`/api/admin/stripe/revenue?period=day&days=${currentDayOfMonth}`);
+        const currentPartialData = await currentPartialResponse.json();
+        const currentPartialRevenue = currentPartialData.totalRevenue || 0;
+        
+        // Calculate projected full month revenue based on current daily average
+        const dailyAverage = currentDayOfMonth > 0 ? currentPartialRevenue / currentDayOfMonth : 0;
+        const projectedFullMonthRevenue = dailyAverage * daysInCurrentMonth;
+        
+        // Use the higher of actual or projected for current month
+        const currRevenue = Math.max(currMonthRevenue, projectedFullMonthRevenue);
+        const prevRevenue = prevMonthRevenue;
+
+        // Get customer counts from Firestore
         const ordersRef = collection(db, 'orders');
         const qCurrOrders = query(
           ordersRef,
@@ -48,7 +78,7 @@ export default function GrowthCard() {
         const qPrevOrders = query(
           ordersRef,
           where('createdAt', '>=', prevMonthStartTS),
-          where('createdAt', '<', prevMonthEndTS)
+          where('createdAt', '<', currentMonthStartTS)
         );
 
         const [currOrdersSnap, prevOrdersSnap] = await Promise.all([
@@ -56,22 +86,16 @@ export default function GrowthCard() {
           getDocs(qPrevOrders),
         ]);
 
-        let currRevenue = 0;
         const currCustomers = new Set();
         currOrdersSnap.forEach((d) => {
           const data = d.data();
-          const v = data?.total ?? data?.amount ?? 0;
-          currRevenue += typeof v === 'number' ? v : parseFloat(v) || 0;
           const cust = data?.customer?.email ?? data?.customer?.id ?? data?.customerName ?? data?.customer?.name;
           if (cust) currCustomers.add(cust);
         });
 
-        let prevRevenue = 0;
         const prevCustomers = new Set();
         prevOrdersSnap.forEach((d) => {
           const data = d.data();
-          const v = data?.total ?? data?.amount ?? 0;
-          prevRevenue += typeof v === 'number' ? v : parseFloat(v) || 0;
           const cust = data?.customer?.email ?? data?.customer?.id ?? data?.customerName ?? data?.customer?.name;
           if (cust) prevCustomers.add(cust);
         });
@@ -90,10 +114,16 @@ export default function GrowthCard() {
         const prevTotal = prevTotalSnap.size;
         const currTotal = currTotalSnap.size;
 
-        // Calculate percent changes
-        const revenuePct = Math.round(pctChange(prevRevenue, currRevenue) * 10) / 10; // one decimal
-        const customersPct = Math.round(pctChange(prevCustomers.size, currCustomers.size) * 10) / 10;
-        const productsPct = Math.round(pctChange(prevTotal, currTotal) * 10) / 10;
+        // Calculate percent changes (matching StatCard's pctChange function)
+        const pctChange = (prev, curr) => {
+          if (prev === 0) return curr === 0 ? 0 : 100; // 100% increase if previous was 0 and current > 0
+          const change = ((curr - prev) / Math.abs(prev)) * 100;
+          return Math.round(change * 10) / 10; // Round to one decimal place
+        };
+
+        const revenuePct = pctChange(prevRevenue, currRevenue);
+        const customersPct = pctChange(prevCustomers.size, currCustomers.size);
+        const productsPct = pctChange(prevTotal, currTotal);
 
         // Overall growth: average of the three metrics (only include numbers)
         const metrics = [revenuePct, customersPct, productsPct].filter((n) => typeof n === 'number' && !isNaN(n));
