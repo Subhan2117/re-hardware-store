@@ -1,60 +1,79 @@
 'use client';
-import React, { useState } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { Package, Truck, Clock, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import { db } from '@/app/api/firebase/firebase'; 
+import { useAuth } from '@/app/api/login/context/AuthContext';
 
 export default function OrdersClient() {
+  const { currentUser } = useAuth(); 
   const [activeTab, setActiveTab] = useState('current');
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const currentOrders = [
-    {
-      id: 'ORD-2024-001',
-      date: 'January 14, 2024',
-      status: 'Shipped',
-      tracking: 'TRK123456789',
-      estimated: 'Jan 18, 2024',
-      total: '$249.97',
-      items: [
-        {
-          name: 'DeWalt 20V Cordless Drill Kit',
-          price: '$149.99',
-          qty: 1,
-          img: '/images/drill.jpg',
-        },
-        {
-          name: 'Milwaukee Impact Driver Set',
-          price: '$99.98',
-          qty: 1,
-          img: '/images/driver.jpg',
-        },
-      ],
-    },
-  ];
+  // ✅ NEW: store product images
+  const [productImages, setProductImages] = useState({});
 
-  const previousOrders = [
-    {
-      id: 'ORD-2024-002',
-      date: 'January 10, 2024',
-      status: 'Delivered',
-      tracking: 'TRK987654321',
-      estimated: 'Jan 13, 2024',
-      total: '$129.49',
-      items: [
-        {
-          name: 'Makita Circular Saw Kit',
-          price: '$129.49',
-          qty: 1,
-          img: '/images/saw.jpg',
-        },
-      ],
-    },
-  ];
+  // Fetch user orders
+  useEffect(() => {
+  if (currentUser === undefined) return;
 
-  const orders = activeTab === 'current' ? currentOrders : previousOrders;
+  if (currentUser === null) {
+    setOrders([]); 
+    setLoading(false);
+    return;
+  }
+
+  const fetchOrders = async () => {
+    setLoading(true);
+    try {
+      const q = query(
+        collection(db, 'orders'),
+        where('customerDetails.email', '==', currentUser.email)
+      );
+      const snapshot = await getDocs(q);
+      setOrders(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+      // ✅ NEW: Fetch product images from "products"
+      const productSnapshot = await getDocs(collection(db, "products"));
+      let imagesMap = {};
+
+      productSnapshot.forEach(doc => {
+        const data = doc.data();
+        imagesMap[data.name] = data.image || data.img || data.picture;
+      });
+
+      setProductImages(imagesMap);
+
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchOrders();
+}, [currentUser]);
+
+
+  // Separate current vs previous
+  const currentOrders = orders.filter(
+    (o) => o.status !== 'Delivered'
+  );
+  const previousOrders = orders.filter(
+    (o) => o.status === 'Delivered'
+  );
+
+  const display = activeTab === 'current'
+    ? currentOrders
+    : previousOrders;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white mt-15">
       <div className="mx-auto max-w-6xl px-4 py-10">
+        
         {/* Header */}
         <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -65,6 +84,7 @@ export default function OrdersClient() {
               <ArrowLeft className="h-5 w-5" />
               <span className="font-medium">Back</span>
             </Link>
+
             <div className="flex items-center gap-2">
               <Package className="text-orange-600 h-6 w-6" />
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-gray-900">
@@ -88,8 +108,9 @@ export default function OrdersClient() {
                 : 'bg-white text-gray-600 hover:bg-orange-50 border border-orange-200'
             }`}
           >
-            Current Orders (1)
+            Current Orders ({currentOrders.length})
           </button>
+
           <button
             onClick={() => setActiveTab('previous')}
             className={`px-6 py-2 ml-2 rounded-full text-sm font-semibold transition ${
@@ -98,100 +119,98 @@ export default function OrdersClient() {
                 : 'bg-white text-gray-600 hover:bg-orange-50 border border-orange-200'
             }`}
           >
-            Previous Orders (1)
+            Previous Orders ({previousOrders.length})
           </button>
         </div>
 
-        {/* Orders List */}
-        <div className="space-y-8">
-          {orders.map((order) => (
-            <div
-              key={order.id}
-              className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6 transition hover:shadow-md"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <div>
-                  <h3 className="font-bold text-gray-800">{order.id}</h3>
-                  <p className="text-sm text-gray-500">
-                    Ordered on {order.date}
-                  </p>
-                </div>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    order.status === 'Shipped'
-                      ? 'bg-blue-100 text-blue-700'
-                      : order.status === 'Delivered'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-700'
-                  }`}
-                >
-                  {order.status}
-                </span>
-              </div>
+        {/* Loading */}
+        {loading && (
+          <div className="text-center py-20 text-gray-500">
+            <Clock className="h-6 w-6 mx-auto mb-3 animate-spin" />
+            Loading your orders...
+          </div>
+        )}
 
-              {/* Items */}
-              <div className="divide-y divide-gray-200">
-                {order.items.map((item, idx) => (
-                  <div key={idx} className="flex items-center space-x-4 py-4">
-                    <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
-                      <img
-                        src={item.img}
-                        alt={item.name}
-                        className="object-cover w-full h-full"
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-semibold text-gray-800">{item.name}</p>
-                      <p className="text-sm text-gray-500">Qty: {item.qty}</p>
-                    </div>
-                    <p className="font-bold text-gray-700">{item.price}</p>
+        {/* Orders */}
+        {!loading && (
+          <div className="space-y-8">
+            {display.map((order) => (
+              <div
+                key={order.id}
+                className="rounded-2xl border border-gray-200 bg-white shadow-sm p-6 hover:shadow-md transition"
+              >
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <h3 className="font-bold text-gray-800">{order.id}</h3>
+                    <p className="text-sm text-gray-500">
+                      Ordered on {order.createdAt?.toDate?.().toLocaleDateString()}
+                    </p>
                   </div>
-                ))}
-              </div>
 
-              {/* Footer */}
-              <div className="flex justify-between items-center border-t border-gray-200 pt-4 mt-2 text-sm">
-                <div className="space-y-1">
-                  <p>
-                    <span className="font-semibold text-gray-700">
-                      Tracking Number:
-                    </span>{' '}
-                    {order.tracking}
-                  </p>
-                  <p>
-                    <span className="font-semibold text-gray-700">
-                      Estimated Delivery:
-                    </span>{' '}
-                    {order.estimated}
-                  </p>
+                  <span className="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700">
+                    {order.status || 'Processing'}
+                  </span>
                 </div>
-                <div className="text-right">
-                  <p className="font-semibold text-gray-700">Total</p>
-                  <p className="text-lg font-bold text-orange-600">
-                    {order.total}
-                  </p>
+
+                {/* Items */}
+                <div className="divide-y divide-gray-200">
+                  {order.items?.map((item, idx) => (
+                    <div key={idx} className="flex items-center space-x-4 py-4">
+                      <div className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden">
+                        <img
+                          src={productImages[item.name] || item.img}
+                          alt={item.name}
+                          className="object-cover w-full h-full"
+                        />
+                      </div>
+
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800">{item.name}</p>
+                        <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
+                      </div>
+
+                      <p className="font-bold text-gray-700">${item.price}</p>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex justify-between items-center border-t border-gray-200 pt-4 mt-2 text-sm">
+                  <div className="space-y-1">
+                    <p>
+                      <span className="font-semibold text-gray-700">
+                        Tracking Number:
+                      </span>{' '}
+                      {order.trackingNumber || 'N/A'}
+                    </p>
+                  </div>
+
+                  <div className="text-right">
+                    <p className="font-semibold text-gray-700">Total</p>
+                    <p className="text-lg font-bold text-orange-600">
+                      ${order.total || '0.00'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex justify-between mt-6">
+                  <Link
+                    href={`/tracking`}
+                    className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                  >
+                    <Truck className="h-4 w-4" />
+                    Track Order
+                  </Link>
                 </div>
               </div>
+            ))}
 
-              {/* BUTTONS FOR TRACKING */}
-              <div className="flex justify-between mt-6">
-                <Link
-                  href="/tracking"
-                  className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-lg flex items-center gap-2 transition-colors"
-                >
-                  <Truck className="h-4 w-4" />
-                  Track Order
-                </Link>
+            {!display.length && (
+              <div className="text-center py-20 text-gray-500">
+                No {activeTab} orders found.
               </div>
-            </div>
-          ))}
-
-          {!orders.length && (
-            <div className="text-center py-20 text-gray-500">
-              No {activeTab} orders found.
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
