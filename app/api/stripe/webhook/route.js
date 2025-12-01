@@ -51,16 +51,15 @@ function buildOrderDataFromSession(session) {
     0
   );
 
-  // we didn’t store tax/shipping in metadata, so best effort:
-  const tax = Number(md.tax || 0);
-  const shipping = Number(md.shipping || 0);
+  const tax = md.tax != null ? Number(md.tax) : 0;
+  const shipping = md.shipping != null ? Number(md.shipping) : 0;
 
   const total =
     session.amount_total != null
       ? Number(session.amount_total) / 100
       : subtotal + tax + shipping;
 
-  const trackingNumber = md.trackingNumber || 'TBD';
+  const trackingNumber = md.trackingNumber || session.id || 'TBD';
 
   const firstName = md.firstName || '';
   const lastName = md.lastName || '';
@@ -157,10 +156,6 @@ async function sendOrderConfirmationEmail(email, orderData) {
 // ---------- WEBHOOK ROUTE ----------
 export async function POST(req) {
   try {
-    const sig = req.headers.get('stripe-signature');
-    const raw = await req.arrayBuffer();
-    const buf = Buffer.from(raw);
-
     if (!stripe || !webhookSecret) {
       console.error('Stripe or webhook secret not configured');
       return new Response(
@@ -168,6 +163,10 @@ export async function POST(req) {
         { status: 500 }
       );
     }
+
+    const sig = req.headers.get('stripe-signature');
+    const raw = await req.arrayBuffer();
+    const buf = Buffer.from(raw);
 
     let event;
     try {
@@ -179,24 +178,20 @@ export async function POST(req) {
 
     console.log('🔔 Received Stripe event:', event.type);
 
-    // Only handle checkout completion
     if (event.type !== 'checkout.session.completed') {
-      // Acknowledge everything else
       return new Response(JSON.stringify({ received: true }), {
         status: 200,
       });
     }
 
     const session = event.data.object;
-
-    // Firestore Admin instance (from firebaseAdmin.js)
     const db = adminDb;
 
     const orderId = session.metadata?.orderId || null;
     let orderData = null;
     let orderDocId = null;
 
-    // --- 1) Try to read Firestore order by orderId from metadata ---
+    // --- 1) Try to read existing Firestore order by orderId (created on client) ---
     if (db && orderId) {
       try {
         const ordersRef = db.collection('orders');
@@ -205,20 +200,7 @@ export async function POST(req) {
         if (orderDoc.exists) {
           orderDocId = orderId;
           orderData = orderDoc.data();
-
-          // Update status + payment info
-          const update = {
-            status: 'Paid',
-            paidAt: admin.firestore.FieldValue.serverTimestamp(),
-            sessionId: session.id,
-            amountReceived:
-              session.amount_total != null
-                ? Number(session.amount_total) / 100
-                : undefined,
-          };
-
-          await ordersRef.doc(orderId).update(update);
-          console.log('✅ Updated Firestore order:', orderId);
+          console.log('ℹ️ Found existing Firestore order:', orderId);
         } else {
           console.warn('⚠️ No Firestore order found with id =', orderId);
         }
@@ -229,16 +211,16 @@ export async function POST(req) {
       console.warn('⚠️ Firestore not available, skipping order update');
     }
 
-    // --- 2) If no Firestore order found, build from session metadata ---
+    // --- 2) Merge order data from Firestore (if any) with Stripe session metadata ---
+    const built = buildOrderDataFromSession(session);
+
     if (!orderData) {
-      console.log('ℹ️ Building order data from Stripe session metadata');
-      orderData = buildOrderDataFromSession(session);
+      orderData = built;
     } else {
-      // Ensure some fields exist on Firestore-based orderData
-      const built = buildOrderDataFromSession(session);
+      // Firestore fields win if they exist; Stripe fills gaps
       orderData = {
         ...built,
-        ...orderData, // Firestore values win where present
+        ...orderData,
       };
     }
 
@@ -249,7 +231,67 @@ export async function POST(req) {
       session.customer_email ||
       null;
 
-    // --- 4) Send email ---
+    // --- 4) Build Firestore order payload ---
+    const safeNumber = (v) => Number(v || 0);
+
+    const customerDetails = session.customer_details || null;
+    const shippingAddress = customerDetails?.address || null;
+
+    const customerNameFromStripe = customerDetails?.name || null;
+    const nameFromMetadata = [orderData.firstName, orderData.lastName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const customerName = customerNameFromStripe || nameFromMetadata || null;
+
+    const firestoreOrder = {
+      // identity
+      email,
+      customerName,
+      firstName: orderData.firstName || null,
+      lastName: orderData.lastName || null,
+
+      // items + money
+      items: Array.isArray(orderData.items) ? orderData.items : [],
+      subtotal: safeNumber(orderData.subtotal),
+      tax: safeNumber(orderData.tax),
+      shipping: safeNumber(orderData.shipping),
+      total: safeNumber(orderData.total),
+
+      // status + Stripe references
+      trackingNumber: orderData.trackingNumber || session.id,
+      status: 'Paid',
+      paymentStatus: session.payment_status || 'paid',
+      stripeSessionId: session.id,
+      stripePaymentIntentId:
+        typeof session.payment_intent === 'string'
+          ? session.payment_intent
+          : session.payment_intent?.id,
+
+      shippingAddress,
+      customerDetails,
+
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    // --- 5) Upsert into Firestore ---
+    if (db) {
+      const ordersRef = db.collection('orders');
+
+      if (orderDocId) {
+        await ordersRef.doc(orderDocId).set(firestoreOrder, { merge: true });
+        console.log('✅ Upserted Firestore order (existing doc):', orderDocId);
+      } else {
+        const newDocRef = await ordersRef.add({
+          ...firestoreOrder,
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        orderDocId = newDocRef.id;
+        console.log('✅ Created Firestore order from webhook:', orderDocId);
+      }
+    }
+
+    // --- 6) Send confirmation email ---
     await sendOrderConfirmationEmail(email, orderData);
 
     return new Response(JSON.stringify({ received: true }), { status: 200 });

@@ -1,4 +1,4 @@
-// app/api/stripe/create-checkout-session/route.ts (or .js)
+// app/api/stripe/create-checkout-session/route.js (or .ts)
 import { NextResponse } from 'next/server';
 import stripe from '@/app/lib/stripe';
 
@@ -15,7 +15,7 @@ export async function POST(req) {
     }
 
     const body = await req.json();
-    const { items, shipping, tax, contact, shippingDetails, orderId } = body; // [{ id, name, price, quantity }, ...]
+    const { items, shipping, tax, contact, shippingDetails, orderId } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -50,6 +50,7 @@ export async function POST(req) {
         { status: 400 }
       );
     }
+
     const taxAmount = Math.round(Number(tax || 0) * 100);
     if (taxAmount > 0) {
       line_items.push({
@@ -73,21 +74,18 @@ export async function POST(req) {
       mode: 'payment',
       payment_method_types: ['card'],
       line_items,
-      // 🔥 ask Stripe Checkout to collect address (optional but usually desired)
       shipping_address_collection: {
-        allowed_countries: ['US'], // adjust as needed
+        allowed_countries: ['US'],
       },
-      // 🔥 define a shipping option using the amount from frontend
       shipping_options: [
         {
           shipping_rate_data: {
             display_name: 'Standard Shipping',
             type: 'fixed_amount',
             fixed_amount: {
-              amount: Math.round(Number(shipping) * 100), // dollars -> cents
+              amount: Math.round(Number(shipping || 0) * 100), // dollars -> cents
               currency: 'usd',
             },
-            // optional: estimated delivery
             delivery_estimate: {
               minimum: { unit: 'business_day', value: 2 },
               maximum: { unit: 'business_day', value: 5 },
@@ -95,7 +93,6 @@ export async function POST(req) {
           },
         },
       ],
-      // 🔥 Use the email so Stripe can send its own receipt
       customer_email: contact?.email || undefined,
 
       // 🔥 Attach everything else as metadata for webhooks / Firestore later
@@ -109,16 +106,16 @@ export async function POST(req) {
         state: shippingDetails?.state || '',
         zip: shippingDetails?.zip || '',
         cart: JSON.stringify(items ?? []),
+
+        // ✅ add these so webhook can reconstruct totals
+        tax: tax != null ? String(tax) : '0',
+        shipping: shipping != null ? String(shipping) : '0',
       },
 
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout`,
     });
 
-    // 🔴 OLD: return only id
-    // return NextResponse.json({ id: session.id });
-
-    // ✅ NEW: return url (and id if you still want)
     return NextResponse.json({ id: session.id, url: session.url });
   } catch (err) {
     console.error('Error creating checkout session:', err);
