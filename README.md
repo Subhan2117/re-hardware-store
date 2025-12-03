@@ -1,8 +1,13 @@
 🛠️ Re Hardware Store
+
 Modern Full-Stack E-Commerce Platform
+
 Next.js 15 • Firebase • Stripe • Tailwind • Shadcn UI
+
 <p align="center"> <img src="https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js" /> <img src="https://img.shields.io/badge/Firebase-Firestore-orange?style=for-the-badge&logo=firebase" /> <img src="https://img.shields.io/badge/Stripe-Payments-626CD9?style=for-the-badge&logo=stripe" /> <img src="https://img.shields.io/badge/TailwindCSS-3.0-38B2AC?style=for-the-badge&logo=tailwindcss" /> </p>
-## 📦 Overview
+
+ 📦 Overview
+ 
 Re Hardware Store is a full-stack e-commerce platform built using the Next.js App Router, Firebase backend services, and Stripe Checkout. It features a modern UI, secure authentication, full shopping experience, and an admin dashboard for managing products, orders, and analytics.
 
 ## ✨ Features
