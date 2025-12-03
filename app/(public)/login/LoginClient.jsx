@@ -20,12 +20,10 @@ export default function LoginClient() {
     onGoogleSignIn,
   } = useLogin();
 
-  const [isAdmin, setIsAdmin] = useState(false);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     await onEmailSubmit({
-      mode: isAdmin ? 'admin' : 'user',
+      mode: 'user', // always user-mode now
     });
   };
 
@@ -47,7 +45,7 @@ export default function LoginClient() {
                      disabled:opacity-60 disabled:cursor-not-allowed"
           onClick={() =>
             onGoogleSignIn({
-              mode: isAdmin ? 'admin' : 'user',
+              mode: 'user', // always user-mode now
             })
           }
           disabled={isGoogleLoading || isEmailLoading}
@@ -71,34 +69,6 @@ export default function LoginClient() {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-md mx-auto">
-        {/* User/Admin Toggle (Two-button style) */}
-        <div className="flex justify-center mb-4">
-          <div className="flex w-[220px] bg-gray-100 rounded-full p-1 shadow-inner">
-            <button
-              type="button"
-              onClick={() => setIsAdmin(false)}
-              className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
-                !isAdmin
-                  ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md'
-                  : 'text-gray-600 hover:text-orange-600'
-              }`}
-            >
-              User
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsAdmin(true)}
-              className={`flex-1 py-2 text-sm font-semibold rounded-full transition-all duration-200 ${
-                isAdmin
-                  ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md'
-                  : 'text-gray-600 hover:text-orange-600'
-              }`}
-            >
-              Admin
-            </button>
-          </div>
-        </div>
-
         {/* Email */}
         <div className="flex flex-col">
           <label
@@ -188,8 +158,6 @@ export default function LoginClient() {
                 <Loader2 className="w-4 h-4 animate-spin" />
                 Signing in…
               </span>
-            ) : isAdmin ? (
-              'Sign In as Admin'
             ) : (
               'Sign In'
             )}
