@@ -21,11 +21,57 @@ import {
   Heart,
   Eye,
   ShoppingCart,
+  // NEW
+  Tag,
 } from 'lucide-react';
 import Searchbar from '../component/Searchbar';
 
 export default function Page() {
   const [popularProducts, setPopularProducts] = useState([]);
+
+  // 🔥 Mock deals data
+  const deals = [
+    {
+      id: 'deal-1',
+      name: 'Pro Contractor Drill Kit',
+      description: 'Brushless 20V drill with 2 batteries and fast charger.',
+      originalPrice: 249.99,
+      dealPrice: 189.99,
+      savingsLabel: 'Save 24%',
+      tag: 'Limited Time',
+      endsIn: 'Ends in 2 days',
+    },
+    {
+      id: 'deal-2',
+      name: 'Heavy-Duty Socket Set (120 pc)',
+      description: 'Chrome-vanadium sockets with lifetime warranty.',
+      originalPrice: 179.99,
+      dealPrice: 129.99,
+      savingsLabel: 'Save 28%',
+      tag: 'Weekend Deal',
+      endsIn: 'Ends Sunday',
+    },
+    {
+      id: 'deal-3',
+      name: 'Contractor Paint Bundle',
+      description: 'Rollers, brushes, trays, and tape for whole-home projects.',
+      originalPrice: 89.99,
+      dealPrice: 64.99,
+      savingsLabel: 'Save 27%',
+      tag: 'Bundle Offer',
+      endsIn: 'This week only',
+    },
+    {
+      id: 'deal-4',
+      name: 'Jobsite LED Work Light',
+      description: 'Ultra-bright, adjustable stand light for dark spaces.',
+      originalPrice: 129.99,
+      dealPrice: 94.99,
+      savingsLabel: 'Save 27%',
+      tag: 'Online Exclusive',
+      endsIn: 'Low stock',
+    },
+  ];
 
   useEffect(() => {
     async function fetchPopular() {
@@ -126,7 +172,84 @@ export default function Page() {
         </div>
       </section>
 
-      {/** */}
+      {/** 🔥 Deals Section */}
+      <section className="py-20 relative">
+        <div className="mx-auto px-4 sm:px-2 lg:px-4 max-w-7xl">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
+            <div>
+              <div className="inline-flex items-center px-3 py-1 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold mb-3">
+                <Tag className="w-4 h-4 mr-1" />
+                Limited-Time Offers
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-2">
+                Hot Deals on Pro-Grade Tools
+              </h2>
+              <p className="text-slate-600 max-w-xl">
+                Save big on contractor favorites and essential kits. These
+                deals are perfect for upgrading your toolbox without breaking
+                the budget.
+              </p>
+            </div>
+            <div className="flex gap-3">
+              <Link
+                href="/store?filter=deals"
+                className="inline-flex items-center px-5 py-3 rounded-2xl bg-slate-900 text-white text-sm font-semibold shadow-lg hover:shadow-xl hover:bg-slate-800 transition-all"
+              >
+                View all deals
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+            </div>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {deals.map((deal) => (
+              <div
+                key={deal.id}
+                className="group relative rounded-3xl border border-amber-100/70 bg-white/80 backdrop-blur-lg p-5 flex flex-col shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                    {deal.tag}
+                  </span>
+                  <span className="text-[11px] text-red-600 font-medium">
+                    {deal.endsIn}
+                  </span>
+                </div>
+                <h3 className="text-base font-semibold text-slate-900 mb-1">
+                  {deal.name}
+                </h3>
+                <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+                  {deal.description}
+                </p>
+
+                <div className="mt-auto">
+                  <div className="flex items-baseline gap-2 mb-3">
+                    <span className="text-xl font-bold text-slate-900">
+                      ${deal.dealPrice.toFixed(2)}
+                    </span>
+                    <span className="text-sm text-slate-400 line-through">
+                      ${deal.originalPrice.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                      {deal.savingsLabel}
+                    </span>
+                    <button className="inline-flex items-center text-xs font-semibold text-orange-700 bg-orange-50 px-3 py-1.5 rounded-full hover:bg-orange-100 transition-colors">
+                      <ShoppingCart className="w-3 h-3 mr-1" />
+                      Add to cart
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pointer-events-none absolute inset-0 rounded-3xl border border-transparent group-hover:border-amber-300/70 group-hover:shadow-[0_0_0_1px_rgba(251,191,36,0.4)] transition-all duration-200" />
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/** Features */}
       <section className="py-20 relative ">
         <div className="mx-auto px-4 sm:px-2 lg:px-4">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
