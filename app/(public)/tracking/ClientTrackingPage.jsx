@@ -1,10 +1,26 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Search } from 'lucide-react';
 import { db } from '@/app/api/firebase/firebase';
 
 import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
+
+const STATUS_FLOW = ["paid", "label_created", "in_transit", "out_for_delivery", "delivered"];
+
+function getNextStatus(current) {
+  const i = STATUS_FLOW.indexOf(current);
+  if (i === -1 || i === STATUS_FLOW.length - 1) return null;
+  return STATUS_FLOW[i + 1];
+}
+
+function formatStatus(status) {
+  return status
+    .replace(/_/g, ' ') // replace all underscores
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1)) // capitalize each word
+    .join(' ');
+}
 
 export default function ClientTrackingPage() {
   const [trackingNumber, setTrackingNumber] = useState('');
@@ -12,25 +28,61 @@ export default function ClientTrackingPage() {
   const [isSearching, setIsSearching] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [products, setProducts] = useState([]);
+  const intervalRef = useRef(null);
+  const orderRefState = useRef(null);
+
+  useEffect(() => {
+    orderRefState.current = searchedOrder;
+  }, [searchedOrder]);
 
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, 'products'));
-        const productList = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setProducts(productList);
-      } catch (error) {
-        console.error('Error fetching products:', error);
+        const snapshot = await getDocs(collection(db, 'products'));
+        setProducts(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+      } catch (err) {
+        console.error(err);
       }
     };
-
     fetchProducts();
   }, []);
 
-  const handleSearch = async (e) => {
+  // Auto-update order status
+  useEffect(() => {
+    if (!searchedOrder) return;
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(async () => {
+      const currentOrder = orderRefState.current;
+      if (!currentOrder) return;
+
+      const nextStatus = getNextStatus(currentOrder.status);
+      if (!nextStatus) {
+        clearInterval(intervalRef.current);
+        return;
+      }
+
+      const newEvent = { status: nextStatus, timestamp: Date.now() };
+
+      const orderDocRef = doc(db, 'orders', currentOrder.docId);
+      const updatedEvents = [...(currentOrder.events || []), newEvent];
+
+      await updateDoc(orderDocRef, {
+        status: nextStatus,
+        events: updatedEvents
+      }).catch(err => console.error('Firestore update error:', err));
+
+      setSearchedOrder(prev => ({
+        ...prev,
+        status: nextStatus,
+        events: updatedEvents
+      }));
+    }, 5000);
+
+    return () => clearInterval(intervalRef.current);
+  }, [searchedOrder?.docId]);
+
+  const handleSearch = async e => {
     e.preventDefault();
     if (!trackingNumber.trim()) return;
 
@@ -39,11 +91,9 @@ export default function ClientTrackingPage() {
     setSearchedOrder(null);
 
     try {
-      const ordersSnapshot = await getDocs(collection(db, 'orders'));
-      const orderDoc = ordersSnapshot.docs.find(
-        (d) =>
-          d.data().trackingNumber?.toLowerCase() ===
-          trackingNumber.toLowerCase()
+      const snapshot = await getDocs(collection(db, 'orders'));
+      const orderDoc = snapshot.docs.find(d =>
+        d.data().trackingNumber?.toLowerCase() === trackingNumber.toLowerCase()
       );
 
       if (!orderDoc) {
@@ -52,32 +102,24 @@ export default function ClientTrackingPage() {
         return;
       }
       const orderData = orderDoc.data();
-
-      const productPromises = (orderData.products ?? []).map(async (item) => {
-        const productRef = doc(db, 'products', item.productId);
-        const productSnap = await getDoc(productRef);
-
-        if (productSnap.exists()) {
-          return {
-            id: productSnap.id,
-            quantity: item.quantity,
-            ...productSnap.data(),
-          };
-        } else {
-          return null;
-        }
+      const productPromises = (orderData.products ?? []).map(async item => {
+        const prodSnap = await getDoc(doc(db, 'products', item.productId));
+        return prodSnap.exists() ? { id: prodSnap.id, quantity: item.quantity, ...prodSnap.data() } : null;
       });
 
-      const productsInOrder = (await Promise.all(productPromises)).filter(
-        Boolean
-      );
+      const productsInOrder = (await Promise.all(productPromises)).filter(Boolean);
+      const initialEvent = { status: orderData.status, timestamp: orderData.createdAt?.toMillis() || Date.now() };
 
       setSearchedOrder({
+        docId: orderDoc.id,
+        orderId: orderData.orderId,
         ...orderData,
         products: productsInOrder,
+        events: [initialEvent],
+        status: orderData.status
       });
     } catch (err) {
-      console.error('Error fetching order data:', err);
+      console.error(err);
       setNotFound(true);
       setSearchedOrder(null);
     }
@@ -117,31 +159,17 @@ export default function ClientTrackingPage() {
       {searchedOrder && (
         <div className="w-full max-w-2xl bg-white rounded-xl shadow-lg p-6 space-y-6">
           <div>
-            <h2 className="text-2xl font-semibold text-gray-900">
-              Order #{searchedOrder.orderId}W
-            </h2>
-            {/* FedEx Tracking UI */}
+            <h2 className="text-2xl font-semibold text-gray-900">Order #{searchedOrder.orderId}</h2>
             <div className="mt-4 p-4 border rounded-md bg-gray-50">
               <h3 className="font-semibold text-lg">Order Status</h3>
-
               <p className="text-gray-800 font-medium mt-2">
-                Status:{" "}
-                <span className="font-semibold capitalize">
-                  {searchedOrder.status || "Unknown"}
-                </span>
+                Status: <span className="font-semibold capitalize">{searchedOrder.status}</span>
               </p>
-
-              {/* timeline (optional) */}
-              {searchedOrder.events && Array.isArray(searchedOrder.events) && (
-                <div className="mt-3 space-y-1">
-                  {searchedOrder.events.map((ev, i) => (
-                    <p key={i} className="text-gray-600 text-sm">
-                      {new Date(ev.timestamp).toLocaleString()} —{" "}
-                      <span className="capitalize">{ev.status}</span>
-                    </p>
-                  ))}
-                </div>
-              )}
+              {searchedOrder.events?.map((ev, i) => (
+                <p key={i} className="text-gray-600 text-sm">
+                  {new Date(ev.timestamp).toLocaleTimeString()} — <span className="capitalize">{formatStatus(ev.status)}</span>
+                </p>
+              ))}
             </div>
             <p className="text-gray-600 mt-1 text-sm">
               Order placed: {searchedOrder?.createdAt?.toDate().toLocaleDateString()}
