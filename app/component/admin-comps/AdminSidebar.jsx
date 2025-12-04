@@ -33,6 +33,13 @@ const SIDEBAR_ITEMS = [
     icon: FolderTree,
     href: '/admin/categories',
   },
+    {
+    id: 'deals',
+    label: 'Deals',
+    icon: FolderTree,
+    href: '/admin/deals',
+  },
+
 
   {
     id: 'users',

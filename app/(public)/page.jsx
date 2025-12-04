@@ -1,11 +1,11 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { Badge } from 'lucide-react';
 import LiquidEther from '../component/background/LiquidEther';
 import { db } from '@/app/api/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import ProductPreviewCard from '@/app/component/ProductPreviewCard';
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
   Hammer,
@@ -21,72 +21,73 @@ import {
   Heart,
   Eye,
   ShoppingCart,
-  // NEW
   Tag,
 } from 'lucide-react';
 import Searchbar from '../component/Searchbar';
 
+// 🛒 Cart context
+import { useCart } from '@/app/context/CartContext';
+
 export default function Page() {
   const [popularProducts, setPopularProducts] = useState([]);
+  const [deals, setDeals] = useState([]);
 
-  // 🔥 Mock deals data
-  const deals = [
-    {
-      id: 'deal-1',
-      name: 'Pro Contractor Drill Kit',
-      description: 'Brushless 20V drill with 2 batteries and fast charger.',
-      originalPrice: 249.99,
-      dealPrice: 189.99,
-      savingsLabel: 'Save 24%',
-      tag: 'Limited Time',
-      endsIn: 'Ends in 2 days',
-    },
-    {
-      id: 'deal-2',
-      name: 'Heavy-Duty Socket Set (120 pc)',
-      description: 'Chrome-vanadium sockets with lifetime warranty.',
-      originalPrice: 179.99,
-      dealPrice: 129.99,
-      savingsLabel: 'Save 28%',
-      tag: 'Weekend Deal',
-      endsIn: 'Ends Sunday',
-    },
-    {
-      id: 'deal-3',
-      name: 'Contractor Paint Bundle',
-      description: 'Rollers, brushes, trays, and tape for whole-home projects.',
-      originalPrice: 89.99,
-      dealPrice: 64.99,
-      savingsLabel: 'Save 27%',
-      tag: 'Bundle Offer',
-      endsIn: 'This week only',
-    },
-    {
-      id: 'deal-4',
-      name: 'Jobsite LED Work Light',
-      description: 'Ultra-bright, adjustable stand light for dark spaces.',
-      originalPrice: 129.99,
-      dealPrice: 94.99,
-      savingsLabel: 'Save 27%',
-      tag: 'Online Exclusive',
-      endsIn: 'Low stock',
-    },
-  ];
+  const { addToCart } = useCart();
 
   useEffect(() => {
-    async function fetchPopular() {
-      const snap = await getDocs(collection(db, 'products'));
-      const all = snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setPopularProducts(all);
+    async function fetchData() {
+      try {
+        // 1) Fetch all products
+        const productsSnap = await getDocs(collection(db, 'products'));
+        const allProducts = productsSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // 2) Fetch deals
+        const dealsSnap = await getDocs(collection(db, 'deals'));
+        const rawDeals = dealsSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // 3) Build product map for quick lookup
+        const productMap = {};
+        allProducts.forEach((p) => {
+          if (p?.id) productMap[p.id] = p;
+        });
+
+        // 4) Attach full product object to each deal
+        const hydratedDeals = rawDeals
+          .filter((d) => d.active !== false) // show only active deals
+          .map((deal) => {
+            const product = productMap[deal.productId];
+            if (!product) {
+              console.warn(
+                'No product found for deal productId:',
+                deal.productId
+              );
+              return null;
+            }
+            return {
+              ...deal,
+              product,
+            };
+          })
+          .filter(Boolean); // remove nulls
+
+        setPopularProducts(allProducts);
+        setDeals(hydratedDeals);
+      } catch (err) {
+        console.error('Error loading homepage data:', err);
+      }
     }
 
-    fetchPopular();
+    fetchData();
   }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-200 via-slate-100 to-orange-200 overflow-hidden">
-      {/** NavaBar */}
-
       {/* Hero Section */}
       <section className="relative pt-32 px-4 sm:px-6 lg:px-8 overflow-hidden">
         <div className=" absolute inset-0">
@@ -140,7 +141,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/** Popular tools */}
+      {/* Popular tools */}
       <section className="py-20 relative " id="popular-tools">
         <div className="mx-auto px-4 sm:px-2 lg:px-4">
           <div className="mb-8 text-center max-w-fit items-center mx-auto">
@@ -159,7 +160,6 @@ export default function Page() {
             </p>
           </div>
 
-          {/** Cards */}
           <div className="mt-10 overflow-hidden whitespace-nowrap">
             <div className="flex animate-[scrollLeft_40s_linear_infinite]">
               {popularProducts.concat(popularProducts).map((p, index) => (
@@ -172,7 +172,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/** 🔥 Deals Section */}
+      {/* 🔥 Deals Section (from Firestore) */}
       <section className="py-20 relative">
         <div className="mx-auto px-4 sm:px-2 lg:px-4 max-w-7xl">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-10">
@@ -185,9 +185,9 @@ export default function Page() {
                 Hot Deals on Pro-Grade Tools
               </h2>
               <p className="text-slate-600 max-w-xl">
-                Save big on contractor favorites and essential kits. These
-                deals are perfect for upgrading your toolbox without breaking
-                the budget.
+                Save big on contractor favorites and essential kits. These deals
+                are perfect for upgrading your toolbox without breaking the
+                budget.
               </p>
             </div>
             <div className="flex gap-3">
@@ -201,55 +201,76 @@ export default function Page() {
             </div>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {deals.map((deal) => (
-              <div
-                key={deal.id}
-                className="group relative rounded-3xl border border-amber-100/70 bg-white/80 backdrop-blur-lg p-5 flex flex-col shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
-                    {deal.tag}
-                  </span>
-                  <span className="text-[11px] text-red-600 font-medium">
-                    {deal.endsIn}
-                  </span>
-                </div>
-                <h3 className="text-base font-semibold text-slate-900 mb-1">
-                  {deal.name}
-                </h3>
-                <p className="text-sm text-slate-600 mb-4 line-clamp-2">
-                  {deal.description}
-                </p>
-
-                <div className="mt-auto">
-                  <div className="flex items-baseline gap-2 mb-3">
-                    <span className="text-xl font-bold text-slate-900">
-                      ${deal.dealPrice.toFixed(2)}
+          {deals.length === 0 ? (
+            <p className="text-slate-500 text-sm">
+              No active deals right now. Check back soon!
+            </p>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+              {deals.map((deal) => (
+                <div
+                  key={deal.id}
+                  className="group relative rounded-3xl border border-amber-100/70 bg-white/80 backdrop-blur-lg p-5 flex flex-col shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-200"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-100">
+                      {deal.tag || 'Special Offer'}
                     </span>
-                    <span className="text-sm text-slate-400 line-through">
-                      ${deal.originalPrice.toFixed(2)}
+                    <span className="text-[11px] text-red-600 font-medium">
+                      {deal.endsInText || 'Limited stock'}
                     </span>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
-                      {deal.savingsLabel}
-                    </span>
-                    <button className="inline-flex items-center text-xs font-semibold text-orange-700 bg-orange-50 px-3 py-1.5 rounded-full hover:bg-orange-100 transition-colors">
-                      <ShoppingCart className="w-3 h-3 mr-1" />
-                      Add to cart
-                    </button>
-                  </div>
-                </div>
+                  <h3 className="text-base font-semibold text-slate-900 mb-1">
+                    {deal.name || deal.product?.name || 'Tool Deal'}
+                  </h3>
+                  <p className="text-sm text-slate-600 mb-4 line-clamp-2">
+                    {deal.description ||
+                      'High-performance tool selected as part of our limited-time deals.'}
+                  </p>
 
-                <div className="pointer-events-none absolute inset-0 rounded-3xl border border-transparent group-hover:border-amber-300/70 group-hover:shadow-[0_0_0_1px_rgba(251,191,36,0.4)] transition-all duration-200" />
-              </div>
-            ))}
-          </div>
+                  <div className="mt-auto">
+                    <div className="flex items-baseline gap-2 mb-3">
+                      <span className="text-xl font-bold text-slate-900">
+                        $
+                        {typeof deal.dealPrice === 'number'
+                          ? deal.dealPrice.toFixed(2)
+                          : Number(deal.product?.price || 0).toFixed(2)}
+                      </span>
+                      {typeof deal.originalPrice === 'number' && (
+                        <span className="text-sm text-slate-400 line-through">
+                          ${deal.originalPrice.toFixed(2)}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between">
+                      {deal.savingsLabel && (
+                        <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-100">
+                          {deal.savingsLabel}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!deal.product) return;
+                          addToCart(deal.product);
+                        }}
+                        className="inline-flex items-center text-xs font-semibold text-orange-700 bg-orange-50 px-3 py-1.5 rounded-full hover:bg-orange-100 transition-colors"
+                      >
+                        <ShoppingCart className="w-3 h-3 mr-1" />
+                        Add to cart
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="pointer-events-none absolute inset-0 rounded-3xl border border-transparent group-hover:border-amber-300/70 group-hover:shadow-[0_0_0_1px_rgba(251,191,36,0.4)] transition-all duration-200" />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/** Features */}
+      {/* Features */}
       <section className="py-20 relative ">
         <div className="mx-auto px-4 sm:px-2 lg:px-4">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -295,10 +316,9 @@ export default function Page() {
         </div>
       </section>
 
-      {/** Experience */}
+      {/* Experience */}
       <section className="py-20 relative ">
         <div className="mx-auto px-4 sm:px-2 lg:px-4">
-          {' '}
           <div className="backdrop-blur-xl border border-slate-200/30 bg-white/90 p-12 transition-all duration-300 rounded-3xl shadow-xl">
             <div className="grid md:grid-cols-3 gap-8 text-center">
               <div className="group">
@@ -330,7 +350,7 @@ export default function Page() {
         </div>
       </section>
 
-      {/** Contacts */}
+      {/* Contacts */}
       <section className="py-20 relative">
         <div className=" mx-auto px-4 sm:px-2 lg:px-4">
           <div className="text-center mb-16">
