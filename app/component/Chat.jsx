@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Hammer } from 'lucide-react';
+import ReactMarkdown from 'react-markdown'; // ⬅️ add this
 
 export default function BuildCraftAssistant() {
   const [open, setOpen] = useState(false);
@@ -58,7 +59,7 @@ export default function BuildCraftAssistant() {
         {
           role: 'assistant',
           content:
-            "Hmm, something went wrong talking to the AI. Please try again in a moment.",
+            'Hmm, something went wrong talking to the AI. Please try again in a moment.',
         },
       ]);
     } finally {
@@ -86,18 +87,24 @@ export default function BuildCraftAssistant() {
 
       {/* Chat Panel */}
       {open && (
-        <div className="fixed bottom-28 right-6 z-40 
+        <div
+          className="fixed bottom-28 right-6 z-40 
                         w-[380px] h-[520px] max-w-[90vw] 
-                        rounded-2xl shadow-2xl bg-white overflow-hidden flex flex-col">
+                        rounded-2xl shadow-2xl bg-white overflow-hidden flex flex-col"
+        >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 
-                          bg-gradient-to-r from-orange-500 to-amber-400 text-white">
+          <div
+            className="flex items-center justify-between px-4 py-3 
+                          bg-gradient-to-r from-orange-500 to-amber-400 text-white"
+          >
             <div className="flex items-center gap-2">
               <span className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center">
                 <Hammer className="w-4 h-4" />
               </span>
               <div>
-                <h2 className="font-semibold text-sm">BuildCraft AI Assistant</h2>
+                <h2 className="font-semibold text-sm">
+                  BuildCraft AI Assistant
+                </h2>
                 <p className="text-xs text-orange-50">
                   Ask me about your building project
                 </p>
@@ -119,7 +126,9 @@ export default function BuildCraftAssistant() {
               return (
                 <div
                   key={idx}
-                  className={`mb-2 flex ${isUser ? 'justify-end' : 'justify-start'}`}
+                  className={`mb-2 flex ${
+                    isUser ? 'justify-end' : 'justify-start'
+                  }`}
                 >
                   {!isUser && (
                     <div className="mr-2 mt-auto w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center">
@@ -133,7 +142,25 @@ export default function BuildCraftAssistant() {
                         : 'bg-white text-slate-800 border border-slate-200 rounded-bl-sm'
                     }`}
                   >
-                    {m.content}
+                    <div
+                      className={`max-w-[80%] rounded-2xl px-3 py-2 text-xs leading-relaxed ${
+                        isUser
+                          ? 'bg-orange-500 text-white rounded-br-sm'
+                          : 'bg-white text-slate-800 border border-slate-200 rounded-bl-sm'
+                      }`}
+                    >
+                      {isUser ? (
+                        m.content
+                      ) : (
+                        <div className="prose prose-xs max-w-none">
+                          <ReactMarkdown>
+                            {typeof m.content === 'string'
+                              ? m.content
+                              : String(m.content)}
+                          </ReactMarkdown>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
