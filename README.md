@@ -136,7 +136,7 @@ pnpm dev
 - React Native app  
 
 ## 👨‍💻 Author
-Subhan Nadeem  
+Subhan Nadeem  , Gurleen Kaur, Matthew Arcaro, Rosemarie Nasta, James McCormack
 Full-Stack Developer  
 
 ## 📄 License
