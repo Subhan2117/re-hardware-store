@@ -7,7 +7,7 @@ import { useMemo } from 'react';
 import { useCart } from '@/app/context/CartContext';
 
 const TAX_RATE = 0.085;
-const SHIPPING_FLAT = 12.99;
+const SHIPPING_FLAT = 7.99;
 
 export function calculateTotals(items) {
   const subtotal = items.reduce((sum, it) => sum + it.price * it.quantity, 0);

@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Upload, Package, Plus, X } from 'lucide-react';
 import { db } from '@/app/api/firebase/firebase';
-// add to your imports
 import {
   collection,
   getDocs,
@@ -17,8 +16,11 @@ import {
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
+import { useRouter } from 'next/navigation';
 
 export default function AddProductPage() {
+  const router = useRouter();
+
   const [form, setForm] = useState({
     id: '', // optional custom Firestore doc id (string)
     sku: '',
@@ -39,7 +41,6 @@ export default function AddProductPage() {
   const [images, setImages] = useState([]); // local previews only
   const [submitting, setSubmitting] = useState(false);
   const [banner, setBanner] = useState({ type: '', msg: '' });
-  // add near other useState hooks
   const [catLoading, setCatLoading] = useState(true);
   const [catError, setCatError] = useState('');
   const [categories, setCategories] = useState([]); // [{label, value}]
@@ -114,7 +115,7 @@ export default function AddProductPage() {
 
     const name = form.name.trim();
     const sku = form.sku.trim();
-    const category = form.category.trim(); // IMPORTANT: must match your products.category values (e.g., "Hand Tools")
+    const category = form.category.trim();
 
     const description = form.description.trim();
     const longDescription = form.longDescription.trim();
@@ -154,8 +155,7 @@ export default function AddProductPage() {
     const docBody = {
       sku,
       name,
-      category, // e.g., "Hand Tools"
-
+      category,
       description,
       longDescription,
       price,
@@ -175,11 +175,38 @@ export default function AddProductPage() {
     return { ok: true, data: docBody };
   }
 
+  /* ---------- Appwrite file-type helpers ---------- */
+
+  const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+
+  const getFileExtension = (file) => {
+    const name = file?.name || '';
+    const parts = name.split('.');
+    if (parts.length < 2) return '';
+    return parts.pop().toLowerCase();
+  };
+
+  const isAllowedFile = (file) => {
+    const ext = getFileExtension(file);
+    return ALLOWED_EXTENSIONS.includes(ext);
+  };
+
   async function uploadAllProductImages(productId, files) {
     try {
       const urls = [];
 
       for (const file of files) {
+        console.log('Uploading file:', file.name, file.type);
+
+        if (!isAllowedFile(file)) {
+          console.error('Blocked file with disallowed extension:', file.name);
+          throw new Error(
+            `File type not allowed: ${
+              file.name
+            }. Allowed: ${ALLOWED_EXTENSIONS.join(', ')}`
+          );
+        }
+
         const response = await storage.createFile(
           process.env.NEXT_PUBLIC_APPWRITE_BUCKET_ID,
           ID.unique(),
@@ -248,7 +275,7 @@ export default function AddProductPage() {
 
       setBanner({ type: 'success', msg: 'Product added successfully.' });
 
-      // Reset (keep some UX niceties like status default)
+      // reset form
       setForm({
         id: '',
         sku: '',
@@ -265,33 +292,39 @@ export default function AddProductPage() {
         specifications: [{ key: '', value: '' }],
       });
       setImageFiles([]);
+
+      // redirect after success
+      setTimeout(() => {
+        router.push('/admin/products');
+      }, 1000);
+
+      setImageFiles([]);
     } catch (err) {
       console.error('Add product failed:', err);
       setBanner({
         type: 'error',
-        msg: 'Failed to add product. Check console for details.',
+        msg:
+          err?.message || 'Failed to add product. Check console for details.',
       });
     } finally {
       setSubmitting(false);
     }
   }
 
+  // ---- Load categories ----
   useEffect(() => {
     let alive = true;
     (async () => {
       try {
         setCatLoading(true);
         setCatError('');
-        // categories docs have: name: "Hand Tools", filter: "hand-tools"
-        // We want products.category to match EXACTLY what's in products (Title Case),
-        // so we use `name` as the option value.
         const q = fsQuery(collection(db, 'categories'), orderBy('name'));
         const snap = await getDocs(q);
         const rows = snap.docs.map((d) => {
           const data = d.data() || {};
           return {
-            label: data.name ?? d.id, // shown in dropdown
-            value: data.name ?? d.id, // stored to form.category (must match products.category)
+            label: data.name ?? d.id,
+            value: data.name ?? d.id,
           };
         });
         if (alive) setCategories(rows);
@@ -622,7 +655,7 @@ export default function AddProductPage() {
                 className="hidden"
                 onChange={(e) => {
                   handleImageUpload(e);
-                  e.currentTarget.value = ''; // <-- lets user pick the same file(s) again
+                  e.currentTarget.value = ''; // lets user pick the same file again
                 }}
               />
 
