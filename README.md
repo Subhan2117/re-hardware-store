@@ -137,7 +137,6 @@ pnpm dev
 
 ## 👨‍💻 Author
 Subhan Nadeem  , Gurleen Kaur, Matthew Arcaro, Rosemarie Nasta, James McCormack
-Full-Stack Developer  
 
 ## 📄 License
 For personal, academic, and portfolio use.
