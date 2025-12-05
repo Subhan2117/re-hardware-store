@@ -89,7 +89,7 @@ export default function BuildCraftAssistant() {
       {open && (
         <div
           className="fixed bottom-28 right-6 z-40 
-                        w-[380px] h-[520px] max-w-[90vw] 
+                        w-[480px] h-[580px] max-w-[90vw] 
                         rounded-2xl shadow-2xl bg-white overflow-hidden flex flex-col"
         >
           {/* Header */}
