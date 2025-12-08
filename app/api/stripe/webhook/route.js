@@ -12,10 +12,12 @@ const sendgridApiKey = process.env.SENDGRID_API_KEY;
 const sendgridFromEmail =
   process.env.SENDGRID_FROM_EMAIL || 'noreply@re-hardware-store.com';
 
-if (!stripeSecret) console.warn('Stripe secret key not set (STRIPE_SECRET_KEY)');
+if (!stripeSecret)
+  console.warn('Stripe secret key not set (STRIPE_SECRET_KEY)');
 if (!webhookSecret)
   console.warn('Stripe webhook secret not set (STRIPE_WEBHOOK_SECRET)');
-if (!sendgridApiKey) console.warn('SendGrid API key not set (SENDGRID_API_KEY)');
+if (!sendgridApiKey)
+  console.warn('SendGrid API key not set (SENDGRID_API_KEY)');
 
 const stripe = stripeSecret
   ? new Stripe(stripeSecret, { apiVersion: '2024-06-20' })
@@ -210,12 +212,42 @@ async function decrementStockForOrderItems(items) {
           continue;
         }
 
-        const productDocRef = productsRef.doc(String(productId));
-        const snap = await tx.get(productDocRef);
+        let productDocRef = productsRef.doc(String(productId));
+        let snap = await tx.get(productDocRef);
 
         if (!snap.exists) {
           console.warn(
-            'No product found for stock decrement productId =',
+            'No product found by doc.id for productId =',
+            productId,
+            '– trying field lookup'
+          );
+
+          // Try field `id`
+          const byIdQuery = productsRef.where('id', '==', productId).limit(1);
+          const byIdSnap = await tx.get(byIdQuery);
+
+          if (!byIdSnap.empty) {
+            const docSnap = byIdSnap.docs[0];
+            productDocRef = productsRef.doc(docSnap.id);
+            snap = docSnap;
+          } else {
+            // Try field `sku` as last resort
+            const bySkuQuery = productsRef
+              .where('sku', '==', productId)
+              .limit(1);
+            const bySkuSnap = await tx.get(bySkuQuery);
+
+            if (!bySkuSnap.empty) {
+              const docSnap = bySkuSnap.docs[0];
+              productDocRef = productsRef.doc(docSnap.id);
+              snap = docSnap;
+            }
+          }
+        }
+
+        if (!snap.exists) {
+          console.warn(
+            'No product found at all for stock decrement productId =',
             productId
           );
           continue;
@@ -252,10 +284,9 @@ export async function POST(req) {
   try {
     if (!stripe || !webhookSecret) {
       console.error('Stripe or webhook secret not configured');
-      return new Response(
-        JSON.stringify({ error: 'Stripe not configured' }),
-        { status: 500 }
-      );
+      return new Response(JSON.stringify({ error: 'Stripe not configured' }), {
+        status: 500,
+      });
     }
 
     const sig = req.headers.get('stripe-signature');
@@ -270,15 +301,27 @@ export async function POST(req) {
       return new Response(`Webhook Error: ${err.message}`, { status: 400 });
     }
 
-    console.log('🔔 Received Stripe event:', event.type);
+    console.log('🔔 Stripe webhook event received:', {
+      eventId: event.id,
+      type: event.type,
+    });
 
     if (event.type !== 'checkout.session.completed') {
+      console.log(
+        'ℹ️ Non checkout.session.completed event received, returning early:',
+        event.type
+      );
       return new Response(JSON.stringify({ received: true }), {
         status: 200,
       });
     }
 
     const session = event.data.object;
+    console.log('🧾 Checkout session completed:', {
+      sessionId: session.id,
+      metadata: session.metadata,
+    });
+
     const db = adminDb;
 
     const orderId = session.metadata?.orderId || null;
@@ -288,6 +331,10 @@ export async function POST(req) {
     // --- 1) Try to read existing Firestore order by orderId (created on client) ---
     if (db && orderId) {
       try {
+        console.log(
+          '🔍 Looking up existing Firestore order by orderId:',
+          orderId
+        );
         const ordersRef = db.collection('orders');
         const orderDoc = await ordersRef.doc(orderId).get();
 
@@ -303,6 +350,10 @@ export async function POST(req) {
       }
     } else if (!db) {
       console.warn('⚠️ Firestore not available, skipping order update');
+    } else if (!orderId) {
+      console.warn(
+        '⚠️ No orderId in session.metadata, will create new order doc'
+      );
     }
 
     // --- 2) Always build items from session metadata (this includes productId) ---
@@ -315,8 +366,14 @@ export async function POST(req) {
     // but we still keep items from Firestore if present.
     let orderData;
     if (!existingOrderData) {
+      console.log(
+        '🧱 No existing Firestore order data, using builtFromSession only'
+      );
       orderData = builtFromSession;
     } else {
+      console.log(
+        '🧱 Merging existing Firestore order data with builtFromSession'
+      );
       orderData = {
         ...builtFromSession,
         ...existingOrderData,
@@ -373,6 +430,12 @@ export async function POST(req) {
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     };
 
+    console.log('📝 Firestore order payload ready:', {
+      orderDocId: orderDocId || '(new)',
+      email,
+      total: firestoreOrder.total,
+    });
+
     // --- 5) Upsert into Firestore ---
     if (db) {
       const ordersRef = db.collection('orders');
@@ -388,11 +451,21 @@ export async function POST(req) {
         orderDocId = newDocRef.id;
         console.log('✅ Created Firestore order from webhook:', orderDocId);
       }
+    } else {
+      console.warn(
+        '⚠️ Skipping Firestore order write, adminDb is not available'
+      );
     }
 
     // --- 6) Decrement product stock based on *session* items (with productId) ---
+    console.log('🧺 Preparing to decrement stock for items:', itemsForStock, {
+      sessionId: session.id,
+      orderDocId,
+    });
+
     try {
       await decrementStockForOrderItems(itemsForStock);
+      console.log('✅ Completed stock decrement for session', session.id);
     } catch (e) {
       console.error('❌ Error while decrementing stock (non-fatal):', e);
     }
