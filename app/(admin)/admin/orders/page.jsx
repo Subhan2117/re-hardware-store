@@ -4,24 +4,36 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '@/app/api/firebase/firebase';
 import { collection, getDocs } from 'firebase/firestore';
 import { Search, PackageSearch, Truck, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 function statusBadgeClasses(status) {
   const s = (status || '').toLowerCase();
   if (s === 'delivered' || s === 'completed')
     return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
-  if (s === 'in transit' || s === 'shipped')
+  if (s === 'in transit' || s === 'shipped' || s === 'out for delivery')
     return 'bg-blue-50 text-blue-700 border border-blue-200';
-  if (s === 'processing')
+  if (s === 'processing' || s === 'paid' || s === 'label_created')
     return 'bg-amber-50 text-amber-700 border border-amber-200';
   if (s === 'cancelled' || s === 'canceled')
     return 'bg-rose-50 text-rose-700 border border-rose-200';
   return 'bg-gray-50 text-gray-700 border border-gray-200';
 }
 
+// ✅ Handle Firestore Timestamp, number, ISO string, etc.
 function formatDate(value) {
   if (!value) return '—';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value;
+
+  let d;
+  if (typeof value?.toDate === 'function') {
+    d = value.toDate();
+  } else if (typeof value === 'number') {
+    d = new Date(value);
+  } else {
+    d = new Date(value);
+  }
+
+  if (Number.isNaN(d.getTime())) return '—';
+
   return d.toLocaleDateString(undefined, {
     year: 'numeric',
     month: 'short',
@@ -29,16 +41,30 @@ function formatDate(value) {
   });
 }
 
+// ✅ Normalize raw Firebase/Stripe status into a nice label
+function normalizeStatus(rawStatus) {
+  if (!rawStatus) return 'processing';
+  const s = rawStatus.toLowerCase();
+
+  if (s === 'paid' || s === 'label_created') return 'processing';
+  if (s === 'in_transit') return 'in transit';
+  if (s === 'out_for_delivery') return 'out for delivery';
+  if (s === 'delivered') return 'delivered';
+  return rawStatus;
+}
+
 export default function OrdersPage() {
+  const router = useRouter();
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState('all'); // 'priority' | 'recent' | 'all'
 
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch products
         const productSnapshot = await getDocs(collection(db, 'products'));
         const productList = productSnapshot.docs.map((doc) => ({
           id: doc.id,
@@ -47,13 +73,16 @@ export default function OrdersPage() {
         }));
         setProducts(productList);
 
+        // Fetch orders
         const orderSnapshot = await getDocs(collection(db, 'orders'));
         const ordersList = orderSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
         }));
 
-        const ordersWithNames = ordersList.map((order) => {
+        // Attach product names + compute total + derive status + lastUpdate from events/updatedAt
+        const ordersWithComputed = ordersList.map((order) => {
+          // Products mapping
           const rawProducts = Array.isArray(order.products)
             ? order.products
             : [];
@@ -72,14 +101,49 @@ export default function OrdersPage() {
             0
           );
 
+          // Status + lastUpdate from events/updatedAt
+          const events = Array.isArray(order.events) ? order.events : [];
+          let latestEvent = null;
+
+          if (events.length > 0) {
+            latestEvent = events.reduce((latest, evt) => {
+              const latestTs = latest?.timestamp ?? 0;
+              const evtTs = evt?.timestamp ?? 0;
+              return evtTs > latestTs ? evt : latest;
+            }, null);
+          }
+
+          const rawStatus =
+            latestEvent?.status ||
+            order.status ||
+            order.paymentStatus ||
+            'processing';
+
+          const normalized = normalizeStatus(rawStatus);
+
+          let lastUpdateMs = 0;
+
+          if (latestEvent?.timestamp) {
+            // You stored timestamp as a number (ms) in events
+            lastUpdateMs = latestEvent.timestamp;
+          } else if (order.updatedAt?.toDate) {
+            lastUpdateMs = order.updatedAt.toDate().getTime();
+          } else if (order.updatedAt) {
+            lastUpdateMs = new Date(order.updatedAt).getTime();
+          }
+
           return {
             ...order,
             products: productsWithNames,
             total,
+            status: normalized,
+            rawStatus,
+            // store numeric ms for easy sorting
+            lastUpdate: lastUpdateMs || null,
           };
         });
 
-        setOrders(ordersWithNames);
+        setOrders(ordersWithComputed);
       } catch (error) {
         console.error('Error fetching orders:', error);
       } finally {
@@ -91,47 +155,69 @@ export default function OrdersPage() {
   }, []);
 
   const filteredOrders = useMemo(() => {
-    let filtered = orders;
+  let filtered = [...orders];
 
-    if (filter === 'priority') {
-      filtered = filtered.filter(
-        (o) => (o.status || '').toLowerCase() === 'in transit'
+  // PROCESSING = paid, label_created, processing
+  if (filter === 'processing') {
+    filtered = filtered.filter((o) => {
+      const s = o.rawStatus?.toLowerCase() || '';
+      return (
+        s === 'paid' ||
+        s === 'label_created' ||
+        s === 'processing'
       );
-    }
+    });
+  }
 
-    if (filter === 'recent') {
-      filtered = [...filtered].sort(
-        (a, b) => new Date(b.lastUpdate || 0) - new Date(a.lastUpdate || 0)
+  // IN TRANSIT = in_transit, out_for_delivery
+  if (filter === 'transit') {
+    filtered = filtered.filter((o) => {
+      const s = o.rawStatus?.toLowerCase() || '';
+      return (
+        s === 'in_transit' ||
+        s === 'out_for_delivery'
       );
-    }
+    });
+  }
 
-    if (searchTerm.trim() !== '') {
-      const term = searchTerm.toLowerCase();
-      filtered = filtered.filter((order) => {
-        const productsText = Array.isArray(order.products)
-          ? order.products.map((p) => p.name).join(' ')
-          : '';
+  // DELIVERED
+  if (filter === 'delivered') {
+    filtered = filtered.filter((o) => {
+      const s = o.rawStatus?.toLowerCase() || '';
+      return s === 'delivered';
+    });
+  }
 
-        const text =
-          (order.trackingNumber || '') +
-          ' ' +
-          (order.status || '') +
-          ' ' +
-          productsText;
+  // SEARCH FILTER
+  if (searchTerm.trim() !== '') {
+    const term = searchTerm.toLowerCase();
+    filtered = filtered.filter((order) => {
+      const productsText = Array.isArray(order.products)
+        ? order.products.map((p) => p.name).join(' ')
+        : '';
 
-        return text.toLowerCase().includes(term);
-      });
-    }
+      const text =
+        (order.trackingNumber || '') +
+        ' ' +
+        (order.status || '') +
+        ' ' +
+        productsText;
 
-    return filtered;
-  }, [orders, filter, searchTerm]);
+      return text.toLowerCase().includes(term);
+    });
+  }
+
+  return filtered;
+}, [orders, filter, searchTerm]);
+
 
   const summary = useMemo(() => {
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const inTransit = orders.filter(
-      (o) => (o.status || '').toLowerCase() === 'in transit'
-    ).length;
+    const inTransit = orders.filter((o) => {
+      const s = (o.status || '').toLowerCase();
+      return s === 'in transit' || s === 'out for delivery';
+    }).length;
 
     return { totalOrders, totalRevenue, inTransit };
   }, [orders]);
@@ -206,24 +292,35 @@ export default function OrdersPage() {
           <div className="flex items-center gap-2">
             <button
               className={`px-3 py-1.5 rounded-full text-xs sm:text-sm border transition ${
-                filter === 'priority'
+                filter === 'processing'
                   ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
                   : 'border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100'
               }`}
-              onClick={() => setFilter('priority')}
+              onClick={() => setFilter('processing')}
             >
-              Priority (In Transit)
+              Processing
             </button>
 
             <button
               className={`px-3 py-1.5 rounded-full text-xs sm:text-sm border transition ${
-                filter === 'recent'
+                filter === 'transit'
                   ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
                   : 'border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100'
               }`}
-              onClick={() => setFilter('recent')}
+              onClick={() => setFilter('transit')}
             >
-              Most Recent
+              In Transit
+            </button>
+
+            <button
+              className={`px-3 py-1.5 rounded-full text-xs sm:text-sm border transition ${
+                filter === 'delivered'
+                  ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                  : 'border-orange-200 text-orange-700 bg-orange-50 hover:bg-orange-100'
+              }`}
+              onClick={() => setFilter('delivered')}
+            >
+              Delivered
             </button>
 
             <button
@@ -234,7 +331,7 @@ export default function OrdersPage() {
               }`}
               onClick={() => setFilter('all')}
             >
-              Show All
+              All Orders
             </button>
           </div>
         </div>
@@ -285,7 +382,8 @@ export default function OrdersPage() {
                   return (
                     <tr
                       key={order.id}
-                      className={`border-t border-orange-50 ${
+                      onClick={() => router.push(`/admin/orders/${order.id}`)}
+                      className={`cursor-pointer border-t border-orange-50 ${
                         idx % 2 === 0 ? 'bg-white' : 'bg-orange-50/40'
                       } hover:bg-orange-100/50 transition-colors`}
                     >
@@ -337,7 +435,9 @@ export default function OrdersPage() {
 
                       <td className="px-5 h-14 align-middle">
                         <span className="text-xs sm:text-sm text-gray-700 truncate block">
-                          {formatDate(order.lastUpdate)}
+                          {order.lastUpdate
+                            ? formatDate(order.lastUpdate)
+                            : formatDate(order.updatedAt)}
                         </span>
                       </td>
                     </tr>
