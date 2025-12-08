@@ -13,7 +13,8 @@ const sendgridFromEmail =
   process.env.SENDGRID_FROM_EMAIL || 'noreply@re-hardware-store.com';
 
 if (!stripeSecret) console.warn('Stripe secret key not set (STRIPE_SECRET_KEY)');
-if (!webhookSecret) console.warn('Stripe webhook secret not set (STRIPE_WEBHOOK_SECRET)');
+if (!webhookSecret)
+  console.warn('Stripe webhook secret not set (STRIPE_WEBHOOK_SECRET)');
 if (!sendgridApiKey) console.warn('SendGrid API key not set (SENDGRID_API_KEY)');
 
 const stripe = stripeSecret
@@ -25,25 +26,45 @@ if (sendgridApiKey) {
 }
 
 // ---------- HELPERS ----------
-function buildOrderDataFromSession(session) {
-  const md = session.metadata || {};
 
-  // cart is JSON string from create-checkout-session
+/**
+ * Parse cart items from Stripe session metadata.
+ * Expects session.metadata.cart to be a JSON-encoded array.
+ */
+function parseCartFromMetadata(metadata) {
   let cartItems = [];
+  if (!metadata) return cartItems;
+
   try {
-    if (md.cart) {
-      const parsed = JSON.parse(md.cart);
-      if (Array.isArray(parsed)) cartItems = parsed;
+    if (metadata.cart) {
+      const parsed = JSON.parse(metadata.cart);
+      if (Array.isArray(parsed)) {
+        cartItems = parsed;
+      }
     }
   } catch (e) {
     console.warn('Failed to parse metadata.cart', e);
   }
 
-  const items = cartItems.map((item) => {
+  console.log('🛒 Raw cart from metadata:', cartItems);
+  return cartItems;
+}
+
+function buildOrderDataFromSession(session) {
+  const md = session.metadata || {};
+
+  const rawCartItems = parseCartFromMetadata(md);
+
+  const items = rawCartItems.map((item) => {
     const name = item.name || item.title || 'Product';
     const quantity = Number(item.quantity || 1);
     const price = Number(item.price || 0);
-    return { name, quantity, price };
+
+    // IMPORTANT: This MUST match how you store the Firestore product doc ID
+    const productId =
+      item.productId || item.id || item.firestoreId || item.product_id || null;
+
+    return { name, quantity, price, productId };
   });
 
   const subtotal = items.reduce(
@@ -153,6 +174,79 @@ async function sendOrderConfirmationEmail(email, orderData) {
   }
 }
 
+/**
+ * Decrement product stock for each item in the order.
+ * Expects each item to have { productId, quantity }.
+ */
+async function decrementStockForOrderItems(items) {
+  if (!adminDb) {
+    console.warn('⚠️ adminDb not available, skipping stock decrement');
+    return;
+  }
+
+  if (!Array.isArray(items) || items.length === 0) {
+    console.warn('⚠️ No items to decrement stock for');
+    return;
+  }
+
+  console.log('🧺 Items for stock decrement:', items);
+
+  const productsRef = adminDb.collection('products');
+
+  try {
+    await adminDb.runTransaction(async (tx) => {
+      for (const item of items) {
+        const quantity = Number(item.quantity || 1);
+
+        // Now that we send productId from checkout, this should always be set
+        const productId =
+          item.productId || item.id || item.product_id || item.firestoreId;
+
+        if (!productId || !Number.isFinite(quantity) || quantity <= 0) {
+          console.warn(
+            'Skipping item in stock decrement, missing productId or invalid quantity:',
+            item
+          );
+          continue;
+        }
+
+        const productDocRef = productsRef.doc(String(productId));
+        const snap = await tx.get(productDocRef);
+
+        if (!snap.exists) {
+          console.warn(
+            'No product found for stock decrement productId =',
+            productId
+          );
+          continue;
+        }
+
+        const data = snap.data() || {};
+        const currentStock = Number(data.stock ?? 0);
+        const safeCurrentStock = Number.isFinite(currentStock)
+          ? currentStock
+          : 0;
+
+        const newStock = Math.max(0, safeCurrentStock - quantity);
+
+        tx.update(productDocRef, {
+          stock: newStock,
+          inStock: newStock > 0,
+          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        console.log(
+          `📦 Decremented stock for product ${productId}: ${safeCurrentStock} → ${newStock}`
+        );
+      }
+    });
+
+    console.log('✅ Stock decrement transaction completed');
+  } catch (err) {
+    console.error('❌ Failed to decrement stock in transaction:', err);
+  }
+}
+
 // ---------- WEBHOOK ROUTE ----------
 export async function POST(req) {
   try {
@@ -188,7 +282,7 @@ export async function POST(req) {
     const db = adminDb;
 
     const orderId = session.metadata?.orderId || null;
-    let orderData = null;
+    let existingOrderData = null;
     let orderDocId = null;
 
     // --- 1) Try to read existing Firestore order by orderId (created on client) ---
@@ -199,7 +293,7 @@ export async function POST(req) {
 
         if (orderDoc.exists) {
           orderDocId = orderId;
-          orderData = orderDoc.data();
+          existingOrderData = orderDoc.data();
           console.log('ℹ️ Found existing Firestore order:', orderId);
         } else {
           console.warn('⚠️ No Firestore order found with id =', orderId);
@@ -211,16 +305,21 @@ export async function POST(req) {
       console.warn('⚠️ Firestore not available, skipping order update');
     }
 
-    // --- 2) Merge order data from Firestore (if any) with Stripe session metadata ---
-    const built = buildOrderDataFromSession(session);
+    // --- 2) Always build items from session metadata (this includes productId) ---
+    const builtFromSession = buildOrderDataFromSession(session);
 
-    if (!orderData) {
-      orderData = built;
+    // We'll use this array for stock updates
+    const itemsForStock = builtFromSession.items || [];
+
+    // Merge for saving the order: existing Firestore data wins for fields,
+    // but we still keep items from Firestore if present.
+    let orderData;
+    if (!existingOrderData) {
+      orderData = builtFromSession;
     } else {
-      // Firestore fields win if they exist; Stripe fills gaps
       orderData = {
-        ...built,
-        ...orderData,
+        ...builtFromSession,
+        ...existingOrderData,
       };
     }
 
@@ -291,7 +390,14 @@ export async function POST(req) {
       }
     }
 
-    // --- 6) Send confirmation email ---
+    // --- 6) Decrement product stock based on *session* items (with productId) ---
+    try {
+      await decrementStockForOrderItems(itemsForStock);
+    } catch (e) {
+      console.error('❌ Error while decrementing stock (non-fatal):', e);
+    }
+
+    // --- 7) Send confirmation email ---
     await sendOrderConfirmationEmail(email, orderData);
 
     return new Response(JSON.stringify({ received: true }), { status: 200 });

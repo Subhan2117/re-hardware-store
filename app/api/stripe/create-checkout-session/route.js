@@ -1,4 +1,4 @@
-// app/api/stripe/create-checkout-session/route.js (or .ts)
+// app/api/stripe/create-checkout-session/route.js
 import { NextResponse } from 'next/server';
 import stripe from '@/app/lib/stripe';
 
@@ -24,6 +24,7 @@ export async function POST(req) {
       );
     }
 
+    // Build Stripe line_items for checkout
     const line_items = items
       .map((item) => {
         if (!item?.id || !item?.quantity || !item?.price) return null;
@@ -32,7 +33,7 @@ export async function POST(req) {
         if (!unitAmount || unitAmount <= 0) return null;
 
         return {
-          quantity: item.quantity,
+          quantity: Number(item.quantity),
           price_data: {
             currency: 'usd',
             unit_amount: unitAmount,
@@ -51,6 +52,7 @@ export async function POST(req) {
       );
     }
 
+    // Extra tax line item (so Stripe total matches what you show)
     const taxAmount = Math.round(Number(tax || 0) * 100);
     if (taxAmount > 0) {
       line_items.push({
@@ -69,6 +71,15 @@ export async function POST(req) {
       req.headers.get('origin') ||
       process.env.NEXT_PUBLIC_APP_URL ||
       'http://localhost:3000';
+
+    // 🔥 This is what the webhook will use to decrement stock
+    // We send the Firestore product doc id as `productId`
+    const cartForMetadata = items.map((item) => ({
+      productId: item.id, // this should be Firestore products doc.id
+      name: item.name || item.title || 'Product',
+      price: Number(item.price) || 0,
+      quantity: Number(item.quantity) || 1,
+    }));
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -95,9 +106,9 @@ export async function POST(req) {
       ],
       customer_email: contact?.email || undefined,
 
-      // 🔥 Attach everything else as metadata for webhooks / Firestore later
+      // Attach metadata so webhook can rebuild the order + decrement stock
       metadata: {
-        orderId: orderId || '', // Firestore docId for reliable webhook matching
+        orderId: orderId || '', // Firestore order doc id (if you created one earlier)
         firstName: contact?.firstName || '',
         lastName: contact?.lastName || '',
         phone: contact?.phone || '',
@@ -105,9 +116,11 @@ export async function POST(req) {
         city: shippingDetails?.city || '',
         state: shippingDetails?.state || '',
         zip: shippingDetails?.zip || '',
-        cart: JSON.stringify(items ?? []),
 
-        // ✅ add these so webhook can reconstruct totals
+        // 🔑 THIS is now the cleaned cart with productId
+        cart: JSON.stringify(cartForMetadata),
+
+        // Totals for email / order summaries
         tax: tax != null ? String(tax) : '0',
         shipping: shipping != null ? String(shipping) : '0',
       },

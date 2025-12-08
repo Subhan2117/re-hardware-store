@@ -31,7 +31,7 @@ export default function AdminPage() {
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
             <CategoryDistribution />
-            <TopProducts />
+            <TopProducts limit={4} />
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
