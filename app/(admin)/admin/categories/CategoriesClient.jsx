@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import NewCategoryModal from '@/app/component/admin-comps/NewCategory';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 const categoryIcons = {
   'Power Tools': <Wrench className="h-5 w-5" />,
@@ -139,34 +140,37 @@ export default function CategoriesClient() {
         {/* Grid */}
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((cat) => (
-            <div
-              key={cat.id}
-              // ✅ removed router.push to make it non-clickable
-              className="relative rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md"
-            >
-              <div className="p-5 flex justify-between items-start">
-                <div className="flex items-start gap-3">
-                  <div className="rounded-xl bg-orange-50 p-3 text-orange-600">
-                    {cat.icon}
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold tracking-tight">
-                      {cat.name}
-                    </h3>
-                    <p className="text-sm text-gray-500">{cat.count} items</p>
-                  </div>
-                </div>
+            <Link href={`/admin/categories/${cat.id}`} key={cat.id}>
+              <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-md cursor-pointer">
+                <div className="p-5 flex justify-between items-start">
+                  <div className="flex items-start gap-3">
+                    <div className="rounded-xl bg-orange-50 p-3 text-orange-600">
+                      {cat.icon}
+                    </div>
 
-                {/* ✅ static delete button */}
-                <button
-                  onClick={() => handleDelete(cat.id, cat.name)}
-                  className="text-gray-400 hover:text-red-600 transition"
-                  title="Delete Category"
-                >
-                  <Trash2 className="h-5 w-5" />
-                </button>
+                    <div>
+                      <h3 className="text-lg font-semibold tracking-tight">
+                        {cat.name}
+                      </h3>
+                      <p className="text-sm text-gray-500">{cat.count} items</p>
+                    </div>
+                  </div>
+
+                  {/* Delete button (still works, but must stop propagation) */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleDelete(cat.id, cat.name);
+                    }}
+                    className="text-gray-400 hover:text-red-600 transition"
+                    title="Delete Category"
+                  >
+                    <Trash2 className="h-5 w-5" />
+                  </button>
+                </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
 
