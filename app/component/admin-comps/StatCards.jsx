@@ -9,11 +9,11 @@ import {
   FolderTree,
 } from 'lucide-react';
 
-const DEFAULT_STATS = {
-  revenue: 42350,
-  orders: 1234,
-  products: 249,
-  categories: 12,
+const EMPTY_STATS = {
+  revenue: 0,
+  orders: 0,
+  products: 0,
+  categories: 0,
 };
 
 function StatCard({ title, value, icon: Icon, accentClass, subtext, loading }) {
@@ -29,12 +29,14 @@ function StatCard({ title, value, icon: Icon, accentClass, subtext, loading }) {
           </div>
         </div>
       </div>
+
       <div className="p-5">
         {loading ? (
           <div className="h-8 w-24 bg-gray-100 rounded animate-pulse" />
         ) : (
           <div className="text-3xl font-bold text-gray-900">{value}</div>
         )}
+
         {!loading && subtext && (
           <div className="flex items-center gap-1 text-green-600 text-sm mt-2">
             <ArrowUpRight className="w-4 h-4" />
@@ -50,15 +52,19 @@ const formatPct = (n) =>
   n === null || n === undefined ? '0%' : `${n >= 0 ? '+' : ''}${n}%`;
 
 export default function StatCards({
-  stats = DEFAULT_STATS,
+  stats,
   pcts = { revenue: 0, orders: 0, products: 0 },
   loading = false,
 }) {
+  const s = stats || EMPTY_STATS;
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      
+      {/* Revenue */}
       <StatCard
         title="Total Revenue"
-        value={`$${(stats.revenue || 0).toLocaleString()}`}
+        value={`$${(s.revenue || 0).toLocaleString()}`}
         icon={DollarSign}
         accentClass="bg-gradient-to-br from-orange-400 to-amber-500"
         loading={loading}
@@ -69,9 +75,11 @@ export default function StatCards({
           </>
         }
       />
+
+      {/* Orders */}
       <StatCard
         title="Total Orders"
-        value={stats.orders || 0}
+        value={s.orders || 0}
         icon={ShoppingCart}
         accentClass="bg-gradient-to-br from-blue-400 to-blue-600"
         loading={loading}
@@ -82,9 +90,11 @@ export default function StatCards({
           </>
         }
       />
+
+      {/* Products */}
       <StatCard
         title="Total Products"
-        value={stats.products || 0}
+        value={s.products || 0}
         icon={Package}
         accentClass="bg-gradient-to-br from-purple-400 to-purple-600"
         loading={loading}
@@ -95,9 +105,11 @@ export default function StatCards({
           </>
         }
       />
+
+      {/* Categories */}
       <StatCard
         title="Categories"
-        value={stats.categories || 0}
+        value={s.categories || 0}
         icon={FolderTree}
         accentClass="bg-gradient-to-br from-green-400 to-green-600"
         loading={loading}
