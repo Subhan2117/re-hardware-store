@@ -311,15 +311,17 @@ export default function ProductDetailsClient({ productId }) {
               className="relative h-96 bg-gradient-to-br from-slate-100 to-slate-50 rounded-2xl overflow-hidden cursor-zoom-in"
               onClick={() => setIsZoomed(true)}
             >
-              <Image
-                src={images[selectedImageIdx]}
-                alt={product.name}
-                fill
-                className="object-cover"
-                sizes="(max-width: 1024px) 100vw, 50vw"
-                priority
-                fetchPriority="high"
-              />
+             <div className="relative w-full h-full">
+                <Image
+                  src={images[selectedImageIdx]}
+                  alt={product.name}
+                  fill
+                  className="object-contain p-4"
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                  priority
+                  fetchPriority="high"
+                />
+              </div>
             </div>
           </div>
 
@@ -328,7 +330,7 @@ export default function ProductDetailsClient({ productId }) {
               <button
                 key={idx}
                 onClick={() => setSelectedImageIdx(idx)}
-                className={`relative h-24 bg-gradient-to-br from-slate-100 to-slate-50 rounded-2xl overflow-hidden border-2 transition
+                className={`relative aspect-square w-full bg-gradient-to-br from-slate-100 to-slate-50 rounded-2xl overflow-hidden border-2 transition
                 ${
                   selectedImageIdx === idx
                     ? 'border-amber-400'
@@ -336,13 +338,15 @@ export default function ProductDetailsClient({ productId }) {
                 }`}
                 aria-label={`View image ${idx + 1}`}
               >
-                <Image
-                  src={img || '/placeholder.svg'}
-                  alt={`${product.name} ${idx + 1}`}
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 1024px) 33vw, 15vw"
-                />
+                <div className="relative w-full h-full">
+                  <Image
+                    src={img || '/placeholder.svg'}
+                    alt={`${product.name} ${idx + 1}`}
+                    fill
+                    className="object-contain p-2"
+                    sizes="(max-width: 1024px) 33vw, 15vw"
+                  />
+                </div>
               </button>
             ))}
           </div>
