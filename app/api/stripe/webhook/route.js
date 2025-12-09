@@ -195,89 +195,82 @@ async function decrementStockForOrderItems(items) {
 
   const productsRef = adminDb.collection('products');
 
-  try {
+  for (const item of items) {
+    const quantity = Number(item.quantity || 1);
+    const productId =
+      item.productId || item.id || item.product_id || item.firestoreId;
+
+    if (!productId || !Number.isFinite(quantity) || quantity <= 0) {
+      console.warn(
+        'Skipping item in stock decrement, missing productId or invalid quantity:',
+        item
+      );
+      continue;
+    }
+
     await adminDb.runTransaction(async (tx) => {
-      for (const item of items) {
-        const quantity = Number(item.quantity || 1);
+      let productDocRef = productsRef.doc(String(productId));
+      let snap = await tx.get(productDocRef);
 
-        // Now that we send productId from checkout, this should always be set
-        const productId =
-          item.productId || item.id || item.product_id || item.firestoreId;
+      if (!snap.exists) {
+        console.warn(
+          'No product found by doc.id for productId =',
+          productId,
+          '– trying field lookup'
+        );
 
-        if (!productId || !Number.isFinite(quantity) || quantity <= 0) {
-          console.warn(
-            'Skipping item in stock decrement, missing productId or invalid quantity:',
-            item
-          );
-          continue;
-        }
+        // Try field `id`
+        const byIdQuery = productsRef.where('id', '==', productId).limit(1);
+        const byIdSnap = await tx.get(byIdQuery);
 
-        let productDocRef = productsRef.doc(String(productId));
-        let snap = await tx.get(productDocRef);
+        if (!byIdSnap.empty) {
+          const docSnap = byIdSnap.docs[0];
+          productDocRef = docSnap.ref;
+          snap = docSnap;
+        } else {
+          // Try field `sku` as last resort
+          const bySkuQuery = productsRef.where('sku', '==', productId).limit(1);
+          const bySkuSnap = await tx.get(bySkuQuery);
 
-        if (!snap.exists) {
-          console.warn(
-            'No product found by doc.id for productId =',
-            productId,
-            '– trying field lookup'
-          );
-
-          // Try field `id`
-          const byIdQuery = productsRef.where('id', '==', productId).limit(1);
-          const byIdSnap = await tx.get(byIdQuery);
-
-          if (!byIdSnap.empty) {
-            const docSnap = byIdSnap.docs[0];
-            productDocRef = productsRef.doc(docSnap.id);
+          if (!bySkuSnap.empty) {
+            const docSnap = bySkuSnap.docs[0];
+            productDocRef = docSnap.ref;
             snap = docSnap;
-          } else {
-            // Try field `sku` as last resort
-            const bySkuQuery = productsRef
-              .where('sku', '==', productId)
-              .limit(1);
-            const bySkuSnap = await tx.get(bySkuQuery);
-
-            if (!bySkuSnap.empty) {
-              const docSnap = bySkuSnap.docs[0];
-              productDocRef = productsRef.doc(docSnap.id);
-              snap = docSnap;
-            }
           }
         }
-
-        if (!snap.exists) {
-          console.warn(
-            'No product found at all for stock decrement productId =',
-            productId
-          );
-          continue;
-        }
-
-        const data = snap.data() || {};
-        const currentStock = Number(data.stock ?? 0);
-        const safeCurrentStock = Number.isFinite(currentStock)
-          ? currentStock
-          : 0;
-
-        const newStock = Math.max(0, safeCurrentStock - quantity);
-
-        tx.update(productDocRef, {
-          stock: newStock,
-          inStock: newStock > 0,
-          updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-
-        console.log(
-          `📦 Decremented stock for product ${productId}: ${safeCurrentStock} → ${newStock}`
-        );
       }
-    });
 
-    console.log('✅ Stock decrement transaction completed');
-  } catch (err) {
-    console.error('❌ Failed to decrement stock in transaction:', err);
+      if (!snap.exists) {
+        console.warn(
+          'No product found at all for stock decrement productId =',
+          productId
+        );
+        return;
+      }
+
+      const data = snap.data() || {};
+      const currentStockRaw = Number(data.stock ?? 0);
+      const currentStock = Number.isFinite(currentStockRaw)
+        ? currentStockRaw
+        : 0;
+
+      const newStock = Math.max(0, currentStock - quantity);
+
+      tx.update(productDocRef, {
+        stock: newStock,
+        inStock: newStock > 0,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      console.log(
+        `📦 Decremented stock for product ${productId}: ${currentStock} → ${newStock}`
+      );
+    });
   }
+
+  console.log('✅ Stock decrement finished for all items');
 }
+
 
 // ---------- WEBHOOK ROUTE ----------
 export async function POST(req) {
